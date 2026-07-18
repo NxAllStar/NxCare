@@ -55,12 +55,24 @@ export function serviceRoom(serviceTypeCode: string, fallback: string): string {
   return SERVICE_ROOMS[serviceTypeCode] ?? fallback;
 }
 
-function timeLabel(iso: string | null, upcoming: boolean, durationMin: number): string {
-  if (!iso) return `~${durationMin} phút`;
+// The demo backend allocates every task to the same fixed slot, so `start` is identical across
+// steps. Rather than show one repeated time, stagger the estimate: begin at the first task's slot
+// (or 09:00) and walk forward by each step's duration plus a short move/wait buffer, so the times
+// read like a real sequential schedule. Demo estimates only, not a booking.
+const DEFAULT_BASE_MINUTES = 9 * 60; // 09:00
+const STEP_BUFFER_MINUTES = 10;
+
+function startMinutesUTC(iso: string | null): number | null {
+  if (!iso) return null;
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return `~${durationMin} phút`;
-  const hh = String(date.getUTCHours()).padStart(2, '0');
-  const mm = String(date.getUTCMinutes()).padStart(2, '0');
+  if (Number.isNaN(date.getTime())) return null;
+  return date.getUTCHours() * 60 + date.getUTCMinutes();
+}
+
+function formatMinutes(totalMinutes: number, upcoming: boolean): string {
+  const minutes = ((totalMinutes % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const mm = String(minutes % 60).padStart(2, '0');
   return `${upcoming ? '~' : ''}${hh}:${mm}`;
 }
 
@@ -68,9 +80,11 @@ function timeLabel(iso: string | null, upcoming: boolean, durationMin: number): 
  * Map backend care-plan tasks to display steps, ordered by sequence. Backend tasks start LOCKED
  * (unpaid), so none is IN_PROGRESS - the first not-done step is marked active to give the timeline a
  * visible current node (matching the design's single active marker); both surfaces get the same.
+ * Times are staggered per step (see the note above) instead of the identical demo slot.
  */
 export function toCarePlanSteps(tasks: CarePlanTaskInput[]): CarePlanDisplayStep[] {
   const ordered = [...tasks].sort((a, b) => a.sequenceIndex - b.sequenceIndex);
+  let cursorMinutes = startMinutesUTC(ordered[0]?.start ?? null) ?? DEFAULT_BASE_MINUTES;
   const steps: CarePlanDisplayStep[] = ordered.map((task) => {
     const status: CarePlanDisplayStep['status'] =
       task.executionStatus === 'DONE'
@@ -78,12 +92,14 @@ export function toCarePlanSteps(tasks: CarePlanTaskInput[]): CarePlanDisplayStep
         : task.executionStatus === 'IN_PROGRESS'
           ? 'active'
           : 'upcoming';
+    const stepStart = cursorMinutes;
+    cursorMinutes += task.durationMin + STEP_BUFFER_MINUTES;
     return {
       id: task.taskId,
       serviceLabel: task.serviceTypeLabel,
       room: serviceRoom(task.serviceTypeCode, task.serviceTypeLabel),
       directions: SERVICE_DIRECTIONS[task.serviceTypeCode],
-      time: timeLabel(task.start, status !== 'done', task.durationMin),
+      time: formatMinutes(stepStart, status !== 'done'),
       durationMin: task.durationMin,
       status,
     };
