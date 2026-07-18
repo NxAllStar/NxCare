@@ -33,7 +33,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-004 | Agent/tool framework + deterministic constraint checker + audit log (FR-13) | agent-core-dev | TASK-001, TASK-003 | P0 | 1 | Done |
 | TASK-005 | Forecast tool (LLM-as-a-tool) + retrieve-reason-validate grounding contract (FR-07) | forecast-dev | TASK-004 | P0 | 1 | Done |
 | TASK-006 | SimPy simulator world + synthetic seed + metrics harness | simulator-dev | TASK-003 | P0 | 1 | Done |
-| TASK-007 | Intake + slot recommendation + emergency escalation (FR-01, FR-02, BF-05) | intake-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
+| TASK-007 | Intake + slot recommendation + emergency escalation (FR-01, FR-02, BF-05) | intake-dev | TASK-004, TASK-005 | P1 | 2 | Active |
 | TASK-008 | Care Plan + proceed gate + slot allocation (FR-03, FR-04, FR-05, FR-08) | careplan-dev | TASK-004, TASK-006 | P1 | 2 | Planned |
 | TASK-009 | Journey + notifications + patient-code scan + SMS (FR-06, FR-11, FR-15, FR-17) | journey-dev | TASK-008 | P1 | 2 | Planned |
 | TASK-010 | Coordinator + Disruption tiered autonomy (FR-09, FR-10) | agent-core-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
