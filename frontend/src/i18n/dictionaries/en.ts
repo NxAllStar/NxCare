@@ -228,7 +228,7 @@ const en = {
   'prep.notFound': 'No prep reminder found for this visit.',
 
   // --- Hospital console (TASK-026, staff/coordinator screens) ---
-  'console.appName': 'VAIC - Hospital console',
+  'console.appName': 'NxCare - Hospital console',
   'console.sidebar.navLabel': 'Main navigation',
   'console.login.title': 'Staff login',
   'console.login.subtitle': 'Pick a role below to log in (demo mode)',
@@ -270,8 +270,44 @@ const en = {
   'console.dashboard.approvalQueue.confirmRejectPrompt': 'Reject this large-impact re-plan proposal?',
   'console.dashboard.approvalQueue.confirmRejectYes': 'Confirm reject',
   'console.dashboard.approvalQueue.confirmRejectNo': 'Cancel',
-  'console.dashboard.approvalQueue.actionError': 'Could not record the decision. Please try again.',
+  'console.dashboard.approvalQueue.actionError': 'The decision could not be recorded. Please retry.',
   'console.dashboard.reasoning.title': 'Disruption Agent reasoning',
+
+  // --- Clinical Console Screens ---
+  'console.consult.queue': 'Consultation Queue',
+  'console.consult.emptyQueue': 'No patients in queue',
+  'console.consult.patientDetails': 'Patient Details',
+  'console.consult.triageRef': 'Reference Triage',
+  'console.consult.aiRefNotice': 'AI reference - not an official diagnosis',
+  'console.consult.enterDiagnosis': 'Enter Clinical Diagnosis',
+  'console.consult.diagnosisPlaceholder': 'e.g. Acute appendicitis, Gallstones...',
+  'console.consult.orderServices': 'Order Services',
+  'console.consult.selectService': 'Select service...',
+  'console.consult.noServicesSelected': 'No services selected.',
+  'console.consult.signAndFinalise': 'Sign and Finalise Orders',
+  'console.consult.scanPrompt': 'Scan Patient QR Code',
+  'console.consult.diagnosesRequired': 'Please enter a diagnosis before signing.',
+
+  'console.worklist.todaySchedule': "Today's Schedule",
+  'console.worklist.empty': 'No consultations scheduled today',
+  'console.worklist.rearrangeTitle': 'AI Scheduling Assistant',
+  'console.worklist.rearrangePrompt': 'Rearrange Schedule Request',
+  'console.worklist.rearrangePlaceholder': 'Type request (e.g. group morning slots, leave afternoon free)...',
+  'console.worklist.rearrangeConfirm': 'AI rearranged schedule - Do you want to apply?',
+  'console.worklist.confirm': 'Confirm',
+  'console.worklist.cancel': 'Cancel',
+
+  'console.tasks.title': 'Technician Task Queue',
+  'console.tasks.empty': 'No tasks waiting in queue',
+  'console.tasks.complete': 'Complete',
+  'console.tasks.scanToStart': 'Scan to Start',
+  'console.tasks.lockedText': 'Locked (Unpaid)',
+
+  'console.audit.searchPlaceholder': 'Filter audit by patient, actor, or action...',
+  'console.audit.empty': 'No audit records found',
+  'console.admin.simulatorTitle': 'Simulator Config & Initialisation',
+  'console.admin.seedButton': 'Re-seed Simulator',
+  'console.admin.seedConfirm': 'Confirm resetting simulator? This will reset all patient states and tasks to initial seed.',
 } satisfies Record<DictKey, string>;
 
 export default en;

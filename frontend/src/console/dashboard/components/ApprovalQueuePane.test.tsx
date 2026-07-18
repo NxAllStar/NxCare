@@ -62,7 +62,7 @@ function renderPane(props: {
 describe('ApprovalQueuePane (BR-22 approve/reject is one-tap and audited)', () => {
   it('shows the calm empty message when there are no proposals (spec 10 SCR-06 "Empty")', () => {
     renderPane({ proposals: [], decide: vi.fn<DecideFn>() });
-    expect(screen.getByText('Hiện không có đề xuất re-plan nào chờ duyệt.')).toBeInTheDocument();
+    expect(screen.getByText('Hiện không có đề xuất lập lại kế hoạch nào chờ duyệt.')).toBeInTheDocument();
   });
 
   it('renders blast radius, options, and an AIChip-labelled reason for a PENDING_APPROVAL proposal', () => {

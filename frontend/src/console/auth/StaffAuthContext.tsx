@@ -31,10 +31,10 @@ export interface StaffSession {
 // Synthetic demo display names, one per role - never a real person, never a
 // credential (agent-guardrails.md).
 const DEMO_STAFF_NAME: Record<StaffRole, string> = {
-  doctor: 'BS. Lê Văn Minh (demo)',
-  technician: 'KTV Trần Thị Hoa (demo)',
-  coordinator: 'ĐPV Phạm Thu Hà (demo)',
-  admin: 'QT Ngô Đức Anh (demo)',
+  doctor: 'BS. Lê Văn Minh',
+  technician: 'KTV Trần Thị Hoa',
+  coordinator: 'ĐPV Phạm Thu Hà',
+  admin: 'QT Ngô Đức Anh',
 };
 
 /**

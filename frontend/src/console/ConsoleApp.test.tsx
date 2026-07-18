@@ -29,10 +29,10 @@ import { defaultPathForRole, screenPath, type ConsoleScreenId, type StaffRole } 
 
 const SCREEN_HEADING: Record<ConsoleScreenId, RegExp> = {
   'SCR-03': /Màn khám và chỉ định|Consult and orders/,
-  'SCR-04': /Worklist bác sĩ|Doctor worklist/,
-  'SCR-05': /Màn task kỹ thuật viên|Technician task view/,
+  'SCR-04': /Lịch khám bác sĩ|Doctor worklist/,
+  'SCR-05': /Màn nhiệm vụ kỹ thuật viên|Technician task view/,
   'SCR-06': /Dashboard điều phối|Coordinator dashboard/,
-  'SCR-07': /Console quản trị và audit|Admin and audit console/,
+  'SCR-07': /Trang quản trị và kiểm toán|Admin and audit console/,
 };
 
 const ROLE_BUTTON_LABEL: Record<StaffRole, RegExp> = {

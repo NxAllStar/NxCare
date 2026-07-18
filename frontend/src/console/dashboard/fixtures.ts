@@ -20,10 +20,10 @@ interface DemoArea {
 }
 
 export const DEMO_AREAS: DemoArea[] = [
-  { id: 'ED', label: 'Cap cuu' },
-  { id: 'IMG', label: 'Chan doan hinh anh' },
-  { id: 'IM', label: 'Noi tong quat' },
-  { id: 'OR', label: 'Phong mo' },
+  { id: 'ED', label: 'Cấp cứu' },
+  { id: 'IMG', label: 'Chẩn đoán hình ảnh' },
+  { id: 'IM', label: 'Nội tổng quát' },
+  { id: 'OR', label: 'Phòng mổ' },
 ];
 
 export const DEMO_TIME_SLOTS: string[] = ['08:00', '09:00', '10:00', '11:00'];
@@ -92,57 +92,57 @@ export const DEMO_DISRUPTION_EVENTS: DisruptionEvent[] = [
     id: 'disruption-0001',
     status: DisruptionEventStatus.PENDING_APPROVAL,
     blastRadius: 14,
-    areaLabel: 'Phong mo',
+    areaLabel: 'Phòng mổ',
     triggeredAt: '2026-07-18T01:02:00.000Z',
     options: [
       {
         id: 'option-0001-a',
-        label: 'Chuyen phong mo 2 sang phong mo 4',
-        description: 'It anh huong nhat toi lich cua cac benh nhan khac trong ca sang.',
+        label: 'Chuyển phòng mổ 2 sang phòng mổ 4',
+        description: 'Ít ảnh hưởng nhất tới lịch của các bệnh nhân khác trong ca sáng.',
       },
       {
         id: 'option-0001-b',
-        label: 'Doi khung gio ca mo sang 13:30',
-        description: 'Giu nguyen phong nhung day lui 90 phut, anh huong 3 ca tiep theo.',
+        label: 'Dời khung giờ ca mổ sang 13:30',
+        description: 'Giữ nguyên phòng nhưng dời lùi 90 phút, ảnh hưởng 3 ca tiếp theo.',
       },
     ],
     aiReason:
-      'Phat hien phong mo 2 tre 25 phut do ca truoc keo dai. Phuong an doi phong anh huong toi 14 ' +
-      'benh nhan lien quan (truc tiep va gian tiep), vuot nguong can duyet nen chuyen vao hang cho.',
+      'Phát hiện phòng mổ 2 trễ 25 phút do ca trước kéo dài. Phương án đổi phòng ảnh hưởng tới 14 ' +
+      'bệnh nhân liên quan (trực tiếp và gián tiếp), vượt ngưỡng cần duyệt nên chuyển vào hàng chờ.',
   },
   {
     id: 'disruption-0002',
     status: DisruptionEventStatus.PENDING_APPROVAL,
     blastRadius: 9,
-    areaLabel: 'Chan doan hinh anh',
+    areaLabel: 'Chẩn đoán hình ảnh',
     triggeredAt: '2026-07-18T01:04:00.000Z',
     options: [
       {
         id: 'option-0002-a',
-        label: 'Chuyen 9 ca CT sang may CT du phong',
-        description: 'May CT chinh bao tri dot xuat, may du phong con cho trong.',
+        label: 'Chuyển 9 ca CT sang máy CT dự phòng',
+        description: 'Máy CT chính bảo trì đột xuất, máy dự phòng còn chỗ trống.',
       },
     ],
     aiReason:
-      'May CT chinh bao loi dot xuat luc 08:40. Chuyen toan bo 9 ca dang cho sang may du phong de ' +
-      'tranh don ca don doi qua 45 phut; anh huong 9 benh nhan nen vuot nguong can duyet.',
+      'Máy CT chính báo lỗi đột xuất lúc 08:40. Chuyển toàn bộ 9 ca đang chờ sang máy dự phòng để ' +
+      'tránh dồn ca dồn đợi quá 45 phút; ảnh hưởng 9 bệnh nhân nên vượt ngưỡng cần duyệt.',
   },
   {
     id: 'disruption-0003',
     status: DisruptionEventStatus.AUTO_APPLIED,
     blastRadius: 2,
-    areaLabel: 'Noi tong quat',
+    areaLabel: 'Nội tổng quát',
     triggeredAt: '2026-07-18T00:58:00.000Z',
     options: [
       {
         id: 'option-0003-a',
-        label: 'Doi 2 benh nhan sang bac si truc cung chuyen khoa',
-        description: 'Bac si phu trach nghi dot xuat 30 phut.',
+        label: 'Đổi 2 bệnh nhân sang bác sĩ trực cùng chuyên khoa',
+        description: 'Bác sĩ phụ trách nghỉ đột xuất 30 phút.',
       },
     ],
     aiReason:
-      'Anh huong 2 benh nhan, duoi nguong can duyet nen ap dung tu dong; khong xuat hien trong hang ' +
-      'cho duyet cua man hinh nay.',
+      'Ảnh hưởng 2 bệnh nhân, dưới ngưỡng cần duyệt nên áp dụng tự động; không xuất hiện trong hàng ' +
+      'chờ duyệt của màn hình này.',
   },
 ];
 
@@ -150,9 +150,9 @@ export const DEMO_DISRUPTION_EVENTS: DisruptionEvent[] = [
  * the proposals above (calm, readable chain-of-thought - spec 10 "signature
  * surfaces"). Rendered only as plain text, never as HTML (frontend.md). */
 export const DEMO_REASONING_TRANSCRIPT =
-  'Dang theo doi tai cac khu vuc. Phat hien phong mo 2 tre lich do ca truoc keo dai 25 phut. ' +
-  'Danh gia 2 phuong an: doi phong hoac doi khung gio. Uoc tinh so benh nhan lien quan cho tung ' +
-  'phuong an. Phuong an doi phong anh huong it hon nhung vuot nguong can duyet, nen dua vao hang ' +
-  'cho cua dieu phoi vien thay vi tu ap dung. Song song, may CT chinh bao loi; chuyen cac ca dang ' +
-  'cho sang may du phong cung vuot nguong nen dua vao hang cho. Truong hop doi bac si truc noi ' +
-  'tong quat chi anh huong 2 benh nhan, duoi nguong nen ap dung ngay khong can duyet.';
+  'Đang theo dõi tải tại các khu vực. Phát hiện phòng mổ 2 trễ lịch do ca trước kéo dài 25 phút. ' +
+  'Đánh giá 2 phương án: đổi phòng hoặc dời khung giờ. Ước tính số bệnh nhân liên quan cho từng ' +
+  'phương án. Phương án đổi phòng ảnh hưởng ít hơn nhưng vượt ngưỡng cần duyệt, nên đưa vào hàng ' +
+  'chờ của điều phối viên thay vì tự áp dụng. Song song, máy CT chính báo lỗi; chuyển các ca đang ' +
+  'chờ sang máy dự phòng cũng vượt ngưỡng nên đưa vào hàng chờ. Trường hợp đổi bác sĩ trực nội ' +
+  'tổng quát chỉ ảnh hưởng 2 bệnh nhân, dưới ngưỡng nên áp dụng ngay không cần duyệt.';

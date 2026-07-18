@@ -101,14 +101,14 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                     </div>
                     <time
                       dateTime={event.triggeredAt}
-                      className="font-mono text-xs tabular-nums text-muted-foreground"
+                      className="font-mono text-sm tabular-nums text-muted-foreground"
                     >
                       {formatTriggeredAt(event.triggeredAt)}
                     </time>
                   </div>
 
                   <div className="flex items-baseline gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       {t('console.dashboard.approvalQueue.blastRadiusLabel')}
                     </span>
                     <span className="font-mono text-base font-bold tabular-nums text-danger">
@@ -117,7 +117,7 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                   </div>
 
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       {t('console.dashboard.approvalQueue.optionsLabel')}
                     </span>
                     <ul className="mt-1 list-disc pl-5 text-sm text-foreground">
@@ -136,14 +136,14 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                   </p>
 
                   {errorId === event.id && (
-                    <p role="alert" className="text-xs font-medium text-danger">
+                    <p role="alert" className="text-sm font-medium text-danger">
                       {t('console.dashboard.approvalQueue.actionError')}
                     </p>
                   )}
 
                   {isConfirmingReject ? (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-medium text-danger">
+                      <span className="text-sm font-medium text-danger">
                         {t('console.dashboard.approvalQueue.confirmRejectPrompt')}
                       </span>
                       <Button

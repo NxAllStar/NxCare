@@ -26,7 +26,7 @@ describe('ReasoningStreamPane (SCR-06 live reasoning stream)', () => {
 
   it('renders the AI-reasoning label and shows the thinking indicator while streaming', () => {
     renderPane('mot hai ba bon nam');
-    expect(screen.getByText('Suy luận của Disruption Agent')).toBeInTheDocument();
+    expect(screen.getByText('Suy luận của trợ lý sự cố')).toBeInTheDocument();
     expect(screen.getByTestId('streaming-text-thinking')).toBeInTheDocument();
   });
 

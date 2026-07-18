@@ -81,7 +81,7 @@ describe('CoordinatorDashboardScreen (TASK-027 acceptance criteria)', () => {
     renderScreen(() => Promise.resolve(makeDashboardData({ proposals: [] })));
 
     expect(await screen.findByTestId('heatmap-pane')).toBeInTheDocument();
-    expect(screen.getByText('Hiện không có đề xuất re-plan nào chờ duyệt.')).toBeInTheDocument();
+    expect(screen.getByText('Hiện không có đề xuất lập lại kế hoạch nào chờ duyệt.')).toBeInTheDocument();
   });
 
   it('on a mock LLM failure, holds the current plan and shows the "auto-coordination paused" banner instead of applying anything', async () => {

@@ -14,10 +14,10 @@ import { ConsoleShell } from './ConsoleShell';
 
 const NAV_LABEL: Record<string, RegExp> = {
   'SCR-03': /Khám và chỉ định|Consult and orders/,
-  'SCR-04': /Worklist bác sĩ|Doctor worklist/,
-  'SCR-05': /Task kỹ thuật viên|Technician tasks/,
+  'SCR-04': /Lịch khám bác sĩ|Doctor worklist/,
+  'SCR-05': /Nhiệm vụ kỹ thuật viên|Technician tasks/,
   'SCR-06': /Dashboard điều phối|Coordinator dashboard/,
-  'SCR-07': /Quản trị và audit|Admin and audit/,
+  'SCR-07': /Quản trị và kiểm toán|Admin and audit/,
 };
 
 function seedSession(role: StaffRole) {
@@ -81,10 +81,10 @@ describe('ConsoleShell sidebar (TASK-026: sidebar filtered by role per the locke
     expect(screen.queryByRole('link', { name: NAV_LABEL['SCR-05'] })).not.toBeInTheDocument();
   });
 
-  it('top bar shows the signed-in user, a logout control, and a language toggle', () => {
+  it('top bar shows the signed-in user and a logout control (Vietnamese-only console, no language toggle)', () => {
     renderShellAs('coordinator');
     expect(screen.getByText('Demo staff')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Đăng xuất|Log out/ })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /Ngôn ngữ|Language/ })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /Ngôn ngữ|Language/ })).not.toBeInTheDocument();
   });
 });
