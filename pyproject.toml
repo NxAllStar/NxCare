@@ -14,6 +14,13 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5",
 ]
+# Durable-store option (TASK-032, resolves OI-15). Not a core dependency: Redis remains the
+# default store. pg8000 (BSD-3-Clause) is used instead of psycopg2 (LGPL) to avoid the copyleft
+# question in .claude/rules/model-policy.md's dependency table.
+sql = [
+    "sqlalchemy>=2.0",
+    "pg8000>=1.31",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

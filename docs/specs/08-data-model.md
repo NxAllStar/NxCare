@@ -340,7 +340,7 @@ stateDiagram-v2
 
 | Question | Answer |
 |----------|--------|
-| Store | Redis cho state/events thời gian thực (proposal muc 6); store bền vững chưa chốt - [OI-15](11-assumptions-constraints.md#oi-15) / Redis for real-time state and events; durable store undecided |
+| Store | Redis cho state/events thời gian thực (proposal muc 6); store bền vững = PostgreSQL qua SQLAlchemy, DDL tại `src/vaic/state/sql/schemas.sql` - [OI-15](11-assumptions-constraints.md#oi-15) resolved (TASK-032) / Redis for real-time state and events; durable store = PostgreSQL via SQLAlchemy, DDL in `src/vaic/state/sql/schemas.sql` |
 | Migration path | Không có - dữ liệu tạo trong-app/seed simulator, không migrate hệ thống cũ / none - data is created in-app or seeded |
 | Soft delete | Dùng `deleted_at` cho bản ghi bệnh nhân để giữ audit; task hủy giữ ID (`CANCELLED`) / soft delete for patient records; cancelled tasks keep their ID |
 | Auditing | `AuditLogEntry` cho quyết định agent và action đặc quyền, per [06](06-access-control.md) / audit for agent decisions and privileged actions |
@@ -354,5 +354,8 @@ stateDiagram-v2
 
 ## Open points
 
-- Store bền vững ngoài Redis chưa chốt - [OI-15](11-assumptions-constraints.md#oi-15). / Durable store beyond Redis undecided.
+- ~~Store bền vững ngoài Redis chưa chốt~~ - resolved (TASK-032): PostgreSQL via SQLAlchemy. See
+  [OI-15](11-assumptions-constraints.md#oi-15), `src/vaic/state/sql/schemas.sql` (DDL, the source of
+  truth), `src/vaic/state/sql/models.py` (SQLAlchemy models mirroring it). Not yet wired as a live
+  `Repository` backend - only the schema exists so far; the app still runs on Redis by default.
 - Cardinality `ServiceOrder` -> `Task` (1:1 hay 1:n) tùy loại dịch vụ có bước chuẩn bị; xác nhận với bác sĩ - [OI-16](11-assumptions-constraints.md#oi-16). / Order-to-task cardinality to confirm.

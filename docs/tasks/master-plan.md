@@ -57,6 +57,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-028 | FR-23 after-each-step rebalance (journey half) | journey-dev | TASK-009, TASK-027, TASK-026 | P1 | 2 | Planned |
 | TASK-029 | Minimal coordinator console: re-plan approval (FR-09) + A/B metrics (scope-locked) | frontend-ui-dev | TASK-010, TASK-012 | P2 | 3 | Planned |
 | TASK-030 | CI pipeline (GitHub Actions): tests + lint on every PR (deferred, build later) | devops | - | P2 | 3 | Planned |
+| TASK-032 | SQLAlchemy-backed relational schema (schemas.sql + models) for a durable store, resolves OI-15 | tuan.nguyen15 | - | P2 | 2 | Done |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
