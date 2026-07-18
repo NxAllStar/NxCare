@@ -258,13 +258,17 @@ EN: From the doctor's orders, the Care Plan Agent generates a **task list** - ea
 
 VI: **App không xử lý thanh toán.** Cổng chỉ là một **cờ** cho biết bệnh nhân cần đi thanh toán trước khi được tiến hành. Task `UNPAID` vẫn nằm trong plan nhưng bị **khóa** - không tính vào hàng đợi và tải của owner - cho tới khi cờ chuyển `PAID`. Việc thanh toán thực tế diễn ra ngoài app (quầy/hệ thống viện); app chỉ nhắc bệnh nhân "vui lòng đi thanh toán" và chặn tiến hành cho tới khi cờ được xác nhận. Nhờ cờ này, ETA và tải phản ánh đúng lượng bệnh nhân thực sự sẽ được phục vụ.
 
+**Cơ chế xác nhận (quyết định [OI-19](11-assumptions-constraints.md#oi-19)):** nhân viên xác nhận thanh toán bằng cách **quét mã bệnh nhân** (`patient_code`) tại quầy/nơi tiếp nhận. Đây là một **sự kiện quét riêng biệt và diễn ra sớm hơn** quét hiện diện tại phòng của [FR-17](#fr-17): quét xác nhận thanh toán mở khóa task (`LOCKED` -> `PENDING`, cờ chuyển `PAID`), còn quét của FR-17 chỉ áp dụng cho task đã `PENDING`/đã `PAID` khi bệnh nhân đến đúng phòng (`PENDING` -> `IN_PROGRESS`). Hai quét dùng cùng một mã QR nhưng khác thời điểm, khác người quét, và khác hiệu ứng. Vai trò nhân viên cụ thể được phép quét xác nhận thanh toán (chỉ nhân viên quầy/điều phối viên, hay cả bác sĩ/KTV) **chưa chốt** - vẫn là phần còn mở của [OI-19](11-assumptions-constraints.md#oi-19).
+
 EN: **The app processes no payment.** The gate is only a **flag** telling the patient to go pay before proceeding. An `UNPAID` task stays in the plan but is **locked** - excluded from the owner's queue and load - until the flag flips `PAID`. Actual payment happens outside the app (counter or hospital system); the app only prompts "please go pay" and blocks progress until the flag is confirmed. The flag keeps ETA and load reflecting the patients who will actually be served.
+
+**Confirmation mechanism (decided per [OI-19](11-assumptions-constraints.md#oi-19)):** staff confirm payment by **scanning the patient's code** (`patient_code`) at the counter/reception. This is a **distinct, earlier scan** than FR-17's room-presence scan: this scan unlocks the task (`LOCKED` -> `PENDING`, flag flips `PAID`), while FR-17's scan applies only to an already-`PENDING`/paid task when the patient reaches the right room (`PENDING` -> `IN_PROGRESS`). Both scans read the same QR code but differ in timing, scanner, and effect. Which staff role may perform the payment-confirmation scan (front-desk/coordinator only, or also doctor/technician) is **not yet decided** - that remains the open part of [OI-19](11-assumptions-constraints.md#oi-19).
 
 ### Input and output
 
 | | Detail |
 |---|---|
-| Input | Xác nhận cờ đã thanh toán (do nhân viên/quầy đánh dấu, hoặc từ hệ thống viện) / a paid-flag confirmation (staff-marked or from the hospital system) |
+| Input | Xác nhận cờ đã thanh toán: **quét mã bệnh nhân bởi nhân viên** (cơ chế chính - [OI-19](11-assumptions-constraints.md#oi-19)), hoặc tích hợp billing viện (production) / a paid-flag confirmation: **a staff scan of the patient code** (primary mechanism), or a hospital billing integration (production) |
 | Validation | Chỉ nguồn được ủy quyền mới chuyển `PAID`; constraint checker chặn mọi task `UNPAID` khỏi hàng đợi / only an authorised source flips `PAID`; checker blocks unpaid tasks from queues |
 | Output | `Task.payment_status` `PAID`; task mở khóa, vào hàng đợi / task unlocked and enqueued |
 | Persistence | `Payment` (bản ghi cờ, không xử lý tiền), `Task.payment_status` (see [08](08-data-model.md)) |
@@ -275,17 +279,20 @@ EN: **The app processes no payment.** The gate is only a **flag** telling the pa
 |----|------|--------|
 | BR-10 | Task `UNPAID` không vào hàng đợi thực và không tính vào tải/ETA của owner / unpaid tasks never enter the real queue or count toward owner load or ETA | Proposal muc 2 pha 3, guardrail 2 |
 | BR-11 | App không xử lý tiền; chỉ nguồn được ủy quyền (nhân viên/quầy/hệ thống viện) mới chuyển cờ `PAID`; không agent nào tự đặt `PAID` / the app processes no money; only an authorised source flips `PAID`; no agent flips it | Team lead (elicitation), [AS-02](11-assumptions-constraints.md) |
+| BR-36 | Cơ chế xác nhận thanh toán là nhân viên quét mã bệnh nhân (`patient_code`) tại quầy - một sự kiện quét riêng biệt, diễn ra TRƯỚC và khác quét hiện diện của [FR-17](#fr-17); ghi qua `Payment.confirmed_by`/`confirmed_at` / payment confirmation is a staff scan of the patient code at the counter - distinct from and prior to FR-17's presence scan; recorded via `Payment.confirmed_by`/`confirmed_at` | Team lead (elicitation), [OI-19](11-assumptions-constraints.md#oi-19) |
 
 ### Acceptance criteria
 
 - [ ] AC-05.1 Given một task `UNPAID`, when tính hàng đợi và tải của owner, then task đó không xuất hiện và không ảnh hưởng ETA.
 - [ ] AC-05.2 Given task `UNPAID`, when nguồn được ủy quyền đánh dấu đã thanh toán, then cờ chuyển `PAID`, task mở khóa và vào hàng đợi tại slot đã gán.
 - [ ] AC-05.3 (negative) Given một agent cố gọi tool bắt đầu một task `UNPAID`, when constraint checker chạy, then action bị chặn và ghi audit.
+- [ ] AC-05.4 Given một task `LOCKED` (chưa thanh toán), when nhân viên quét mã bệnh nhân tại quầy để xác nhận thanh toán, then `Payment.status` chuyển `PAID`, `confirmed_by`/`confirmed_at` được ghi, và task chuyển `PENDING` - khác với quét hiện diện ở phòng của [FR-17](#fr-17).
 
 ### Dependencies
 
 - Depends on: [FR-04](#fr-04).
-- Blocked by: nothing (cờ, không xử lý tiền - see [AS-02](11-assumptions-constraints.md)). Nguồn xác nhận cờ: [OI-19](11-assumptions-constraints.md#oi-19).
+- Related: [FR-17](#fr-17) - một quét khác, diễn ra sau, tại phòng (hiện diện, không phải thanh toán) / a different, later scan at the room (presence, not payment).
+- Blocked by: nothing (cờ, không xử lý tiền - see [AS-02](11-assumptions-constraints.md)). Vai trò nhân viên được phép quét xác nhận thanh toán chưa chốt: [OI-19](11-assumptions-constraints.md#oi-19) (narrowed).
 
 ---
 
@@ -824,6 +831,7 @@ EN: Each patient has a **patient code** shown in the app (QR/code, ideally on th
 ### Dependencies
 
 - Depends on: [FR-05](#fr-05), [FR-06](#fr-06).
+- Related: [FR-05](#fr-05) - một quét khác, diễn ra trước, tại quầy (xác nhận thanh toán, không phải hiện diện) / a different, earlier scan at the counter (payment confirmation, not presence).
 - Blocked by: nothing - demo dùng quét mô phỏng (nút) ([OI-21](11-assumptions-constraints.md#oi-21) resolved) / demo uses a simulated scan button.
 
 ---

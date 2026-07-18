@@ -212,7 +212,7 @@ erDiagram
 
 **Constraints and invariants**
 
-- App không xử lý tiền; chỉ nguồn được ủy quyền chuyển `status = PAID` (BR-11); nguồn xác nhận tại [OI-19](11-assumptions-constraints.md#oi-19).
+- App không xử lý tiền; chỉ nguồn được ủy quyền chuyển `status = PAID` (BR-11). Cơ chế: nhân viên quét mã bệnh nhân (`patient_code`) tại quầy để xác nhận, ghi vào `confirmed_by`/`confirmed_at` (BR-36, [FR-05](05-functional-requirements.md#fr-05)) - khác với `ScanEvent` (hiện diện tại phòng, [FR-17](05-functional-requirements.md#fr-17)). Vai trò nhân viên cụ thể chưa chốt: [OI-19](11-assumptions-constraints.md#oi-19).
 
 ### `ScanEvent`
 
