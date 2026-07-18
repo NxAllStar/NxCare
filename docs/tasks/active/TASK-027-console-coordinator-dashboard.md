@@ -1,6 +1,6 @@
 ---
 title: "TASK-027: Console SCR-06 coordinator dashboard (flagship)"
-status: Planned
+status: Active
 fr: FR-12
 owner: frontend-ui-dev
 deps: TASK-026
@@ -96,6 +96,7 @@ data, inside the console shell delivered by TASK-026.
 | Date | Who | What was done | Result |
 |------|-----|---------------|--------|
 | 2026-07-18 | orchestrator | Registered (Planned). Sequenced first of the real screens - the demo centerpiece. Blocked on TASK-026 close-out (shares the console shell; serialize). | Planned |
+| 2026-07-18 | orchestrator | TASK-026 closed Done. Flipped to Active; branch feat/TASK-027-console-coordinator-dashboard stacked off the 026 tip (1a6fd57) so it has the console shell. Dispatched spec-guardian to lock the flagship scope (human-in-the-loop blast-radius gate, AI-labelling, audit-on-approve) before frontend-ui-dev builds. | Active |
 
 ## Result
 
