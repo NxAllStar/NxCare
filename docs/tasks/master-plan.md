@@ -53,6 +53,9 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-024 | Patient UI QA: Vitest suite + Playwright golden-path e2e + code/security review gates + secret-scan | qa-test | TASK-022, TASK-023 | P1 | 2 | Planned |
 | TASK-025 | Patient app visual upgrade to iOS-native design (all screens + shell) per owner design | frontend-ui-dev | TASK-023 | P2 | 2 | Done |
 | TASK-026 | Spec FR-23 dynamic queue-driven load-balanced routing (per-station wait, dynamic generation, rebalance-after-each-step) | ba-analyst | - | P1 | 2 | Active |
+| TASK-027 | FR-23 queue-driven route generation (care-plan half) | careplan-dev | TASK-008, TASK-026, TASK-005 | P1 | 2 | Planned |
+| TASK-028 | FR-23 after-each-step rebalance (journey half) | journey-dev | TASK-009, TASK-027, TASK-026 | P1 | 2 | Planned |
+| TASK-029 | Minimal coordinator console: re-plan approval (FR-09) + A/B metrics (scope-locked) | frontend-ui-dev | TASK-010, TASK-012 | P2 | 3 | Planned |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
