@@ -29,10 +29,10 @@ def is_own(repo: Repository, account: Account, record: Any) -> bool:
     Resolution order: the Patient record itself, a direct `patient_id` field, one hop via
     `care_plan_id` -> `CarePlan.patient_id` (covers `Task`), then `created_by`.
 
-    Entities with no direct field and no one-hop path to a patient (`Diagnosis`, `ServiceOrder`,
-    `Slot`, `Payment`, `AuditLogEntry` in the current data model) fail CLOSED here rather than
-    guess - see the TASK-013 cross-boundary note about denormalizing a resolvable patient link
-    onto those rows.
+    `Diagnosis`, `ServiceOrder`, `Slot`, and `Payment` all carry a denormalized `patient_id`
+    (TASK-016), so they resolve on the direct-field branch. `AuditLogEntry.patient_id` is nullable:
+    an entry with no patient context (e.g. a blocked unknown-tool call) falls through to
+    `created_by` and, finding none, fails CLOSED rather than guess.
     """
     if isinstance(record, Patient):
         return account.patient_id is not None and record.id == account.patient_id

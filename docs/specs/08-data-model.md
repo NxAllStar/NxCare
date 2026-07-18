@@ -133,6 +133,7 @@ erDiagram
 | Field | Type | Required | Classification | Description | Example |
 |-------|------|----------|----------------|-------------|---------|
 | `id` | uuid | Yes | Internal | Primary key | `so1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized from `Diagnosis` so Own-scope resolves directly (TASK-016) | `9f1c...` |
 | `diagnosis_id` | uuid | Yes | Internal | FK -> `Diagnosis` | `dg1...` |
 | `service_type_id` | uuid | Yes | Internal | FK -> `ServiceType` | `st1...` |
 | `ordered_by` | uuid | Yes | Internal | FK -> bác sĩ ký / signing doctor | `dr1...` |
@@ -142,6 +143,7 @@ erDiagram
 
 - Chỉ `role_doctor` tạo `ServiceOrder` (BR-05); không agent nào tạo được.
 - `ordered_by` phải là bác sĩ khám buổi đó.
+- `patient_id` phải khớp `Diagnosis.patient_id` của `diagnosis_id` (TASK-016).
 
 ### `ServiceType`
 
@@ -195,6 +197,22 @@ erDiagram
 - `execution_status` chỉ chuyển theo state machine bên dưới.
 - Không được đặt `sequence_index` vi phạm `depends_on` (BR-08, BR-13).
 
+### `Slot`
+
+| Field | Type | Required | Classification | Description | Example |
+|-------|------|----------|----------------|-------------|---------|
+| `id` | uuid | Yes | Internal | Primary key | `sl1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized từ `Task`/`CarePlan` để Own-scope resolve trực tiếp / denormalized so Own-scope resolves directly (TASK-016) | `9f1c...` |
+| `task_id` | uuid | Yes | Internal | FK -> `Task` được xếp / task allocated | `tk1...` |
+| `owner_id` | uuid | Yes | Internal | FK -> `Resource` giữ slot / owning resource | `kt1...` |
+| `start` | datetime | Yes | Internal | Giờ bắt đầu / slot start | `2026-07-17T09:30:00Z` |
+| `end` | datetime | No | Internal | Giờ kết thúc / slot end | `2026-07-17T09:40:00Z` |
+
+**Constraints and invariants**
+
+- `patient_id` phải khớp `Patient` của `task_id` (qua `Task.care_plan_id` -> `CarePlan.patient_id`) (TASK-016).
+- `allocate_slot()` không xếp vào `Resource` có `is_available = false` (BR-16).
+
 ### `Payment`
 
 <!-- Not a money-processing record: it is the proceed-gate flag. The app never touches funds
@@ -203,6 +221,7 @@ erDiagram
 | Field | Type | Required | Classification | Description | Example |
 |-------|------|----------|----------------|-------------|---------|
 | `id` | uuid | Yes | Internal | Primary key | `pm1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized vì `subject_id` là polymorphic / so Own-scope resolves directly (TASK-016) | `9f1c...` |
 | `subject_type` | enum | Yes | Internal | `TASK`/`APPOINTMENT` | `TASK` |
 | `subject_id` | uuid | Yes | Internal | FK -> task/appointment | `tk1...` |
 | `amount` | decimal | No | Confidential | Số tiền cần thanh toán để hiển thị (không xử lý) / amount to display only, not processed | `150000` |
@@ -280,17 +299,19 @@ erDiagram
 | `actor` | string | Yes | Internal | Agent hoặc role người / agent or human role | `Disruption Agent` |
 | `action` | string | Yes | Internal | Hành động / action taken | `resequence_patient` |
 | `target_id` | uuid | No | Internal | FK -> đối tượng tác động / affected object | `tk1...` |
+| `patient_id` | uuid | No | Internal | FK -> `Patient`, khi entry gắn với một bệnh nhân / when the entry is about a patient - denormalized so Own-scope resolves directly (TASK-016) | `9f1c...` |
 | `reasoning` | string | Yes | Confidential | Chain-of-thought / reasoning | `May 2 hang doi dai; day X-quang xuong sau` |
 | `created_at` | datetime | Yes | Internal | Ghi / logged | `2026-07-17T10:05:00Z` |
 
 **Constraints and invariants**
 
 - Append-only; không actor nào sửa entry đã ghi (BR-23).
+- `patient_id` là optional: entry hệ thống không gắn bệnh nhân nào (vd. block một tool lạ) để trống - Own-scope thất bại đóng (fail-closed) khi không có (TASK-016).
 
 ### `IntakeSession` and `Diagnosis` (summary)
 
 - `IntakeSession`: `id`, `patient_id` (FK), `transcript` (Sensitive PII), `structured_triage` (JSON: specialty, priority_level, constraints; Confidential), `emergency_suspected` (bool, Confidential - cờ do Intake gắn khi nghi red-flag, [BF-05](04-business-flows.md)), `created_at`. Invariant: `transcript` là untrusted content ([NFR-SEC-11](07-non-functional-requirements.md#nfr-security)), không log; `emergency_suspected = true` chặn đặt slot thường cho tới khi nhân viên xác nhận ([FR-01](05-functional-requirements.md#fr-01)).
-- `Diagnosis`: `id`, `appointment_id` (FK), `conditions` (Sensitive PII), `diagnosed_by` (FK bác sĩ), `created_at`. Invariant: chỉ `role_doctor` tạo/sửa (BR-05).
+- `Diagnosis`: `id`, `patient_id` (FK -> `Patient`, denormalized từ `appointment_id` để Own-scope resolve trực tiếp - TASK-016), `appointment_id` (FK), `conditions` (Sensitive PII), `diagnosed_by` (FK bác sĩ), `created_at`. Invariant: chỉ `role_doctor` tạo/sửa (BR-05); `patient_id` phải khớp `Appointment.patient_id` của `appointment_id`.
 
 ## State transitions
 
