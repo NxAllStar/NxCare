@@ -4,15 +4,18 @@ Revision ID: a3a9a1c7715a
 Revises:
 Create Date: 2026-07-18 21:35:02.958239
 
-Baseline snapshot of the current 15-entity schema (see src/vaic/state/sql/models.py,
+Baseline snapshot of the current 17-entity schema (see src/vaic/state/sql/models.py,
 which mirrors docs/specs/08-data-model.md column-for-column). It replaces the previous
 `Base.metadata.create_all` bootstrap as the schema-creation path for a fresh database.
 
 This first revision creates the schema straight from the ORM metadata - the single source
-of truth - so the baseline can never drift from the models. Every *subsequent* change (for
-example the ticket-queue columns under discussion for OI-22) must be an explicit, reviewable
-migration, generated with `alembic revision --autogenerate` and hand-checked, not another
-metadata snapshot.
+of truth - so the baseline can never drift from the models. It includes ADR-003's `Department`
+and `QueueTicket` entities and `Appointment.owner_id`: those landed while this baseline had not
+yet been applied to any database, so they belong in the initial snapshot rather than a delta.
+
+From the first `alembic upgrade` against a real database onward, every *subsequent* schema
+change must be an explicit, reviewable migration, generated with
+`alembic revision --autogenerate` and hand-checked, not another metadata snapshot.
 """
 from collections.abc import Sequence
 
