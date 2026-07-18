@@ -136,5 +136,4 @@ spawned against the same board.
 | Root-cause on failing tests or incidents | `debugger` |
 | Options + trade-off analysis for a decision | `brainstormer` (+ `tech-researcher` for evidence) -> ADR |
 | Spec and PRD upkeep | `ba-analyst` |
-| Run archive curation | `history-tracker` |
 | Route, supervise, record | `orchestrator` |

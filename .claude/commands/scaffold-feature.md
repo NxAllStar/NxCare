@@ -37,7 +37,6 @@ existing entry:
 | Root-cause on failing tests or incidents | `debugger` |
 | Options + trade-off analysis for a decision | `brainstormer` (+ `tech-researcher` for evidence) -> ADR |
 | Spec and PRD upkeep | `ba-analyst` |
-| Run archive curation | `history-tracker` |
 | Route, supervise, record | `orchestrator` |
 
 Scaffolding creates structure, not behavior. Leave the logic unimplemented rather than filling it

@@ -118,7 +118,6 @@ Routing:
 | Strategic project evaluation against 6 criteria (tech, AI, business, UX, safety, presentation) | `judge` |
 | Options + trade-off analysis for a decision | `brainstormer` (+ `tech-researcher` for evidence) -> ADR |
 | Spec and PRD upkeep | `ba-analyst` |
-| Run archive curation | `history-tracker` |
 | Route, supervise, record | `orchestrator` |
 
 The standard feature flow, and none of it is optional: `spec-guardian` locks the scope, the
