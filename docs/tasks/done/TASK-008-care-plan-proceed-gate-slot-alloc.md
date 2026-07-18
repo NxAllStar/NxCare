@@ -1,8 +1,8 @@
 ---
 title: "TASK-008: Care Plan + proceed gate + slot allocation"
-status: Active
+status: Done
 fr: "FR-03, FR-04, FR-05, FR-08"
-owner: Khang
+owner: careplan-dev
 branch: feat/TASK-008-care-plan-proceed-gate-slot-alloc
 deps: "TASK-004, TASK-006"
 priority: P1
@@ -95,7 +95,14 @@ allocate station slots. This is the critical-path lane: Journey (TASK-009) and t
 | 2026-07-18 | orchestrator | FLOW COMPLETE. spec-guardian -> careplan-dev (test-first) -> qa-test (green, 97%) -> code+security review (0 Blocker; fixed/deferred) -> secret-scan (clean). All ACs satisfied+verified. NOT committed/PR/merged per mission - reserved for Khang. TASK-008 stays Active pending Khang commit(scope careplan) + PR + merge. Note: discard incidental .pyc/SOURCES.txt churn before commit | Active |
 | 2026-07-18 | orchestrator | MISSION COMPLETE (flow) - board audited 1:1: TASK-008 Active, TASK-031/032/033 Planned, all task files and board rows agree. Handoff to Khang for commit + PR + merge | Active |
 | 2026-07-18 | careplan-dev | Fix round, test-first for every MUST-FIX: (1) slots.py capacity is now an hourly-throughput count (`_hour_bucket`), not overlap-based; (2) slots.py added an owner-clash check (task.owner_id vs candidate resource, true overlap on a different resource) for cM3; (3) care_plan.py/slots.py: empty `candidates_for` is a graceful failed `ActionResult` (audited `FAILED:allocate_slot`), never a raised exception - CarePlan stays DRAFT, no orphan ACTIVE plan, documented rollback contract ("never promote, never delete" - no cross-entity transaction primitive at this layer); (4) added `create_care_plan`/`create_task`/`activate_care_plan` tools, routed through ActionExecutor (audited, no new constraint-checker rule); (5) `sequence_orders` resolves `owner_resolver` exactly once per order and threads it via `SequencedOrder.owner_id` into Task creation. Minors: (6) gate.py now runs `assert_transition` once, before any Payment write; (7) gate.py imports the shared `_now()` from `models.entities` instead of redefining; (8) added `durations.validate_duration_minutes` (BR-14/NFR-SEC-20 range guard), applied in both sequencing.py and slots.py; (9) slots.py excludes CANCELLED/DONE task slots from capacity/clash via `_slot_is_live`. Added docstring preconditions (TASK-031 actor_role, TASK-032 fasting/dependency scope) per the deferred-items list. 12 new/changed tests. `pytest -k careplan` = 34 passed; full suite = 103 passed, 0 regressions; `ruff check` careplan+tests = All checks passed. No edits outside `src/vaic/agents/careplan/` and `tests/test_careplan_*.py` | Active |
+| 2026-07-18 | orchestrator | Merged into main via PR #5. Merged origin/main back into the branch first: resolved a task-ID clash where this branch's TASK-031/032/033 follow-ups collided with TASK-031 already registered from TASK-016's review (renumbered this branch's bind-authz follow-up to TASK-034, kept 032/033). Owner corrected from ad hoc "Khang" to the routing-table seat `careplan-dev`. Full suite re-verified green post-merge (64 passed on the intersecting set) | Done |
 
 ## Result
 
-<Filled when the task moves to Done.>
+Care Plan Agent (FR-03 backend capture, FR-04 task-list generation/sequencing, FR-05 proceed gate,
+FR-08 slot allocation) implemented in `src/vaic/agents/careplan/`, merged to `main` via PR #5.
+Review gate closed with 0 Blockers; must-fix majors fixed in the same PR; three deferred items
+tracked as follow-ups: TASK-031 (patient_id invariant, distinct from this task's original TASK-031
+number - renumbered to avoid the ID clash), TASK-032 (fasting-safety + dependency modeling),
+TASK-033 (atomic slot allocation), TASK-034 (bind actor_role to authenticated principal, this
+task's original TASK-031).

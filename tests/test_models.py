@@ -33,7 +33,7 @@ def test_patient_requires_patient_code_and_defaults_routine():
 
 
 def test_payment_is_a_flag_amount_optional():
-    pay = Payment(subject_type=PaymentSubjectType.TASK, subject_id=uuid4())
+    pay = Payment(patient_id=uuid4(), subject_type=PaymentSubjectType.TASK, subject_id=uuid4())
     assert pay.amount is None  # app processes no money (AS-02)
     assert pay.status is PaymentStatus.UNPAID
 

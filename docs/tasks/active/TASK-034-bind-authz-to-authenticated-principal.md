@@ -1,5 +1,5 @@
 ---
-title: "TASK-031: Bind action authz to the authenticated principal"
+title: "TASK-034: Bind action authz to the authenticated principal"
 status: Planned
 fr: "FR-18"
 owner: agent-core-dev
@@ -12,7 +12,7 @@ tags: [task]
 
 <!-- Task files are written 100% in English (see .claude/rules/task-tracking.md). -->
 
-# TASK-031: Bind action authz to the authenticated principal
+# TASK-034: Bind action authz to the authenticated principal
 
 A status change is written in BOTH places at once: the `status:` field above, and this task's row
 in `docs/tasks/master-plan.md`. They must never disagree. Read the board row back after writing it.

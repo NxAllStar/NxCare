@@ -68,7 +68,8 @@ def _build():
     reg.register(Tool("scan_patient", ScanIn, _set_in_progress))
     reg.register(Tool("allocate_slot", AllocateIn,
                       lambda p, r: {"slot": str(r.save(
-                          Slot(task_id=p.task_id, owner_id=p.resource_id, start=p.start)).id)}))
+                          Slot(patient_id=uuid4(), task_id=p.task_id, owner_id=p.resource_id,
+                               start=p.start)).id)}))
     reg.register(Tool("create_service_order", OrderIn, lambda p, r: {"ok": True}))
     reg.register(Tool("execute_replan", ReplanIn, lambda p, r: {"replanned": True}))
     reg.register(Tool("noop", NoopIn, lambda p, r: {"value": p.value}))

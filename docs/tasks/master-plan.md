@@ -33,8 +33,8 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-004 | Agent/tool framework + deterministic constraint checker + audit log (FR-13) | agent-core-dev | TASK-001, TASK-003 | P0 | 1 | Done |
 | TASK-005 | Forecast tool (LLM-as-a-tool) + retrieve-reason-validate grounding contract (FR-07) | forecast-dev | TASK-004 | P0 | 1 | Done |
 | TASK-006 | SimPy simulator world + synthetic seed + metrics harness | simulator-dev | TASK-003 | P0 | 1 | Done |
-| TASK-007 | Intake + slot recommendation + emergency escalation (FR-01, FR-02, BF-05) | intake-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
-| TASK-008 | Care Plan + proceed gate + slot allocation (FR-03, FR-04, FR-05, FR-08) | Khang | TASK-004, TASK-006 | P1 | 2 | Active |
+| TASK-007 | Intake + slot recommendation + emergency escalation (FR-01, FR-02, BF-05) | intake-dev | TASK-004, TASK-005 | P1 | 2 | Done |
+| TASK-008 | Care Plan + proceed gate + slot allocation (FR-03, FR-04, FR-05, FR-08) | careplan-dev | TASK-004, TASK-006 | P1 | 2 | Done |
 | TASK-009 | Journey + notifications + patient-code scan + SMS (FR-06, FR-11, FR-15, FR-17) | journey-dev | TASK-008 | P1 | 2 | Planned |
 | TASK-010 | Coordinator + Disruption tiered autonomy (FR-09, FR-10) | agent-core-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
 | TASK-011 | Frontend: chat, timeline, coordinator dashboard (FR-12 + screens) - SUPERSEDED by TASK-021..024 (patient-only re-scope, 2026-07-18) | frontend-ui-dev | TASK-007, TASK-008 | P1 | 2 | Pending |
@@ -42,7 +42,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-013 | Auth + role-based access: login, session, server-side authz (FR-18) | agent-core-dev | TASK-003, TASK-004 | P1 | 2 | Done |
 | TASK-014 | Rounded-app features: reschedule/cancel, notifications center, settings+VI/EN, patient search (FR-19..22) - SUPERSEDED by TASK-023 (patient slice) + dropped staff search, 2026-07-18 | frontend-ui-dev | TASK-011, TASK-013 | P2 | 2 | Pending |
 | TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 - SUPERSEDED by TASK-021 (patient app foundation/shell), 2026-07-18 | frontend-ui-dev | TASK-011 | P2 | 2 | Pending |
-| TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | data-modeler | TASK-003 | P2 | 2 | Planned |
+| TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | tuan.nguyen15 | TASK-003 | P2 | 2 | Done |
 | TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Done |
 | TASK-018 | Relocate patient-app IA/sitemap + feature-architecture into a governed PRD; link spec 10 out to it | ba-analyst | - | P2 | 2 | Done |
 | TASK-019 | Scaffold frontend/ (Vite+React+TS+Tailwind+shadcn) plumbing-only; relocate design tokens into it | frontend-ui-dev | - | P2 | 2 | Done |
@@ -57,9 +57,13 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-028 | FR-23 after-each-step rebalance (journey half) | journey-dev | TASK-009, TASK-027, TASK-026 | P1 | 2 | Planned |
 | TASK-029 | Minimal coordinator console: re-plan approval (FR-09) + A/B metrics (scope-locked) | frontend-ui-dev | TASK-010, TASK-012 | P2 | 3 | Planned |
 | TASK-030 | CI pipeline (GitHub Actions): tests + lint on every PR (deferred, build later) | devops | - | P2 | 3 | Planned |
-| TASK-031 | Bind action authz to the authenticated principal: executor/checker/careplan gate must derive actor_role from the FR-18 session, not trust caller-supplied Action.params.actor_role (from TASK-008 review cM7/sM2) | agent-core-dev | TASK-013, TASK-004, TASK-008 | P1 | 2 | Planned |
+| TASK-031 | Enforce the denormalized patient_id invariant at write boundaries + thread patient context into audit (from TASK-016 review) | agent-core-dev | TASK-016 | P2 | 2 | Planned |
 | TASK-032 | Model fasting-safety + inter-service dependencies (breaks_fasting on ServiceType, dependency edges) so sequencing honors BR-08 dependencies and never interleaves a fast-breaking step (from TASK-008 review cM8/cM9) | data-modeler | TASK-003, TASK-008 | P2 | 2 | Planned |
 | TASK-033 | Atomic slot allocation in the state layer: make capacity check-and-insert atomic to remove the TOCTOU race (demo-safe on in-memory store; real risk on durable store OI-15) (from TASK-008 review cM2) | data-modeler | TASK-008 | P2 | 3 | Planned |
+| TASK-034 | Bind action authz to the authenticated principal: executor/checker/careplan gate must derive actor_role from the FR-18 session, not trust caller-supplied Action.params.actor_role (from TASK-008 review cM7/sM2) | agent-core-dev | TASK-013, TASK-004, TASK-008 | P1 | 2 | Planned |
+| TASK-035 | Link Appointment to owner/slot so the intake capacity guard checks real bookings, not just the owner Task queue (from TASK-007 review B1) | data-modeler | TASK-003, TASK-007 | P2 | 2 | Planned |
+| TASK-036 | Bind intake staff_confirmed/emergency_suspected to the authenticated session + stored triage result instead of caller-supplied booleans (from TASK-007 review B2) | agent-core-dev | TASK-013, TASK-007, TASK-034 | P2 | 2 | Planned |
+| TASK-037 | Guard Action.reasoning free-text field against PII leakage into the audit log (from TASK-007 review, reasoning-PII) | agent-core-dev | TASK-004, TASK-007 | P2 | 2 | Planned |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
