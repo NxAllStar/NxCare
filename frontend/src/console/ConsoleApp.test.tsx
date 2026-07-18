@@ -67,6 +67,15 @@ function seedSession(role: StaffRole) {
   );
 }
 
+/** Drives the credential login flow: pick a role card, fill the synthetic
+ * demo credentials (any non-empty pair is accepted), submit. */
+async function loginVia(user: ReturnType<typeof userEvent.setup>, roleLabel: RegExp) {
+  await user.click(screen.getByRole('button', { name: roleLabel }));
+  await user.type(screen.getByLabelText(/Tên đăng nhập/), 'demo.staff');
+  await user.type(screen.getByLabelText(/Mật khẩu/), 'demo-pass');
+  await user.click(screen.getByRole('button', { name: /Đăng nhập vào hệ thống/ }));
+}
+
 function defaultScreenFor(role: StaffRole): ConsoleScreenId {
   const path = defaultPathForRole(role);
   const match = (['SCR-03', 'SCR-04', 'SCR-05', 'SCR-06', 'SCR-07'] as ConsoleScreenId[]).find(
@@ -87,12 +96,37 @@ describe('ConsoleApp (TASK-026 foundation)', () => {
     expect(screen.getByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ })).toBeInTheDocument();
   });
 
-  it("selecting a role logs in and lands on that role's default permitted screen", async () => {
+  it('the demo login lists doctor, technician and admin only (coordinator card removed - identical to admin)', () => {
+    goTo('/console');
+    render(<ConsoleApp />);
+    expect(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.doctor })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.technician })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.admin })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: ROLE_BUTTON_LABEL.coordinator })).not.toBeInTheDocument();
+  });
+
+  it('submitting the form without picking a role or credentials shows an error and does not log in', async () => {
     const user = userEvent.setup();
     goTo('/console');
     render(<ConsoleApp />);
 
+    await user.click(screen.getByRole('button', { name: /Đăng nhập vào hệ thống/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/chọn vai trò/i);
+
     await user.click(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.doctor }));
+    await user.click(screen.getByRole('button', { name: /Đăng nhập vào hệ thống/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/tên đăng nhập và mật khẩu/i);
+
+    // Still on the login page - no navigation happened.
+    expect(screen.getByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ })).toBeInTheDocument();
+  });
+
+  it("selecting a role and submitting credentials logs in and lands on that role's default permitted screen", async () => {
+    const user = userEvent.setup();
+    goTo('/console');
+    render(<ConsoleApp />);
+
+    await loginVia(user, ROLE_BUTTON_LABEL.doctor);
 
     expect(
       await screen.findByRole('heading', { name: SCREEN_HEADING[defaultScreenFor('doctor')] }),
@@ -108,7 +142,7 @@ describe('ConsoleApp (TASK-026 foundation)', () => {
       // No session yet -> redirected to login.
       expect(await screen.findByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.doctor }));
+      await loginVia(user, ROLE_BUTTON_LABEL.doctor);
 
       expect(await screen.findByRole('heading', { name: SCREEN_HEADING['SCR-04'] })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: SCREEN_HEADING['SCR-03'] })).not.toBeInTheDocument();
@@ -121,7 +155,7 @@ describe('ConsoleApp (TASK-026 foundation)', () => {
 
       expect(await screen.findByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.doctor }));
+      await loginVia(user, ROLE_BUTTON_LABEL.doctor);
 
       expect(
         await screen.findByRole('heading', { name: SCREEN_HEADING[defaultScreenFor('doctor')] }),

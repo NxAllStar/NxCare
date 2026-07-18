@@ -230,7 +230,7 @@ const vi = {
   'console.appName': 'NxCare - Console bệnh viện',
   'console.sidebar.navLabel': 'Điều hướng chính',
   'console.login.title': 'Đăng nhập nhân viên',
-  'console.login.subtitle': 'Chọn vai trò bên dưới để đăng nhập (chế độ demo)',
+  'console.login.subtitle': 'Chọn vai trò bên dưới để đăng nhập',
   'console.role.doctor': 'Bác sĩ',
   'console.role.technician': 'Kỹ thuật viên',
   'console.role.coordinator': 'Điều phối viên',
