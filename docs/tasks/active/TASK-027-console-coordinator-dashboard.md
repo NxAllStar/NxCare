@@ -51,9 +51,12 @@ data, inside the console shell delivered by TASK-026.
       real-time tick, tabular numbers, accessible (colour is never the sole signal - pair with a
       label/value; keyboard reachable; AA contrast).
 - [ ] Approval queue pane: one row per proposal showing blast radius, the option(s), and the reason;
-      an AI chip on model-produced content; one-tap approve and reject controls. Reject of a
-      large-impact re-plan requires a confirmation (cross-cutting destructive-action rule). Each
-      approve/reject writes a mock audit entry and removes the proposal from the queue.
+      an AI chip on model-produced content; one-tap approve and reject controls that are ENABLED ONLY
+      when the proposal's `status === PENDING_APPROVAL` (spec 06 approve/reject condition). Reject
+      requires a confirmation (every proposal in this queue is large-impact by definition - the
+      confirm applies to every reject here). Each approve/reject writes a mock audit entry then
+      removes the proposal from the queue; on reject the underlying plan/resource state is held
+      unchanged (AC-09.3).
 - [ ] Live reasoning stream pane: streams the Disruption-Agent chain-of-thought as calm readable
       text, clearly labelled AI reasoning, read-only. A "thinking" indicator while streaming.
 - [ ] States: empty (calm heatmap, no proposals), loading (skeleton), error (LLM-failure banner
@@ -69,9 +72,12 @@ data, inside the console shell delivered by TASK-026.
 
 - [ ] `coordinator` and `admin` see the real dashboard (heatmap + approval queue + reasoning stream)
       at the SCR-06 route; `doctor`/`technician`/`patient` still cannot reach it (TASK-026 contract).
-- [ ] Approving or rejecting a proposal is a single tap, is recorded to a (mock) audit entry, and the
-      proposal leaves the queue (BR-22, FR-12). Rejecting a large-impact re-plan asks for confirmation
-      first.
+- [ ] Approving or rejecting a proposal is a single tap, enabled only while the proposal is
+      `PENDING_APPROVAL`, is recorded to a (mock) audit entry, and the proposal leaves the queue
+      (BR-22, FR-12). Rejecting asks for confirmation first. The mock audit entry records at minimum:
+      actor identity + role, decision, target `DisruptionEvent` id, and timestamp; the proposal's own
+      AI rationale is carried over, not re-generated. The mock audit store is append-only (BR-23): a
+      written entry is never mutated or deleted (it is the seed SCR-07/TASK-030 will later read).
 - [ ] All model-produced content (proposals, reasons, reasoning stream) carries a visible AI label
       distinct from confirmed facts (NFR-USE-05); no raw model text is rendered as HTML.
 - [ ] The heatmap uses the semantic sequential scale and never encodes state by colour alone; numbers
@@ -90,6 +96,17 @@ data, inside the console shell delivered by TASK-026.
 - If the heatmap or streamed-reasoning need would be better served by a new shared primitive
   (e.g. a Heatmap or a StreamingText primitive), create it in `src/components/primitives/`, export and
   test it (frontend.md), rather than a one-off in the screen.
+- Scope lock (spec-guardian, 2026-07-18): the blast-radius threshold N is UNRESOLVED in the specs
+  (OI-03). This UI task must NOT invent a settled N. The mock layer marks each event as pending
+  (`> N`, needs approval) vs auto-applied (`<= N`, invisible on this screen) as fixed demo data; it
+  does not compute a real N. Only the `> N` / `PENDING_APPROVAL` tier appears in the approval queue
+  (matches spec 10 SCR-06 - the auto-applied tier has no surface here).
+- Proof boundary (spec-guardian): this task proves the UI/mock contract ONLY. Do NOT mark FR-09,
+  FR-10, or FR-13 "Done" system-wide off this task - a mock audit array proves the UI shape, not the
+  real agent's blast-radius computation, the Coordinator's real tool-loop, or persistent tamper-
+  evident append-only audit. Those need the backend integration task (TASK-010 / TASK-004).
+- The "no raw model text rendered as HTML" requirement is traceable to agent-guardrails.md ("Model
+  output is a proposal") + NFR-USE-05, not a literal FR-12 clause - correct to honor, attribute it so.
 
 ## Session log
 
@@ -97,6 +114,7 @@ data, inside the console shell delivered by TASK-026.
 |------|-----|---------------|--------|
 | 2026-07-18 | orchestrator | Registered (Planned). Sequenced first of the real screens - the demo centerpiece. Blocked on TASK-026 close-out (shares the console shell; serialize). | Planned |
 | 2026-07-18 | orchestrator | TASK-026 closed Done. Flipped to Active; branch feat/TASK-027-console-coordinator-dashboard stacked off the 026 tip (1a6fd57) so it has the console shell. Dispatched spec-guardian to lock the flagship scope (human-in-the-loop blast-radius gate, AI-labelling, audit-on-approve) before frontend-ui-dev builds. | Active |
+| 2026-07-18 | spec-guardian | Scope lock (read-only): no contradiction with FR-09/10/12/13 or spec 10 SCR-06. Locked 4 additions into this file - (1) N is unresolved (OI-03); mock marks pending vs auto-applied, does not compute N; (2) approve/reject enabled only while PENDING_APPROVAL; (3) mock audit entry min fields = actor+role, decision, DisruptionEvent id, timestamp, carried rationale, append-only (BR-23); (4) UI/mock proof boundary - do NOT mark FR-09/10/13 Done system-wide off this task. Dispatching frontend-ui-dev to build. | Locked |
 
 ## Result
 
