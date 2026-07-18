@@ -13,7 +13,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .demo_state import build_repository, seed_demo_resources
+from .demo_state import build_repository, seed_arrival_demo, seed_demo_resources
 from .intake_routes import build_intake_router
 
 
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
 
     repo = build_repository()
     seed_demo_resources(repo)
+    seed_arrival_demo(repo)
     app.include_router(build_intake_router(repo))
 
     @app.get("/health")
