@@ -78,11 +78,11 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
   }
 
   return (
-    <Card className="flex flex-col gap-4" data-testid="approval-queue-pane">
+    <Card className="flex flex-col gap-4 p-5" data-testid="approval-queue-pane">
       <SectionLabel>{t('console.dashboard.approvalQueue.title')}</SectionLabel>
 
       <ScreenState state={proposals.length === 0 ? 'empty' : 'success'} emptyMessage={t('console.dashboard.approvalQueue.emptyMessage')}>
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col divide-y divide-border">
           {proposals.map((event) => {
             const isPending = event.status === 'PENDING_APPROVAL';
             const isBusy = busyId === event.id;
@@ -92,11 +92,11 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
             const isConfirmingReject = confirmingRejectId === event.id;
 
             return (
-              <li key={event.id}>
-                <Card className="flex flex-col gap-3" data-testid={`proposal-row-${event.id}`} data-status={event.status}>
+              <li key={event.id} className="py-4 first:pt-0 last:pb-0">
+                <div className="flex flex-col gap-3" data-testid={`proposal-row-${event.id}`} data-status={event.status}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-bold text-foreground">{event.areaLabel}</span>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-[15px] font-bold text-foreground">{event.areaLabel}</span>
                       <AIChip label={t('console.dashboard.approvalQueue.aiProposalChip')} />
                     </div>
                     <time
@@ -107,20 +107,23 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                     </time>
                   </div>
 
+                  {/* Thin danger hairline under the proposal header (design/dieu-phoi-vien.png) */}
+                  <div aria-hidden="true" className="h-px w-full bg-danger/25" />
+
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t('console.dashboard.approvalQueue.blastRadiusLabel')}
                     </span>
-                    <span className="font-mono text-base font-bold tabular-nums text-danger">
+                    <span className="font-mono text-lg font-extrabold tabular-nums text-danger">
                       {event.blastRadius}
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t('console.dashboard.approvalQueue.optionsLabel')}
                     </span>
-                    <ul className="mt-1 list-disc pl-5 text-sm text-foreground">
+                    <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-5 text-sm leading-relaxed text-foreground">
                       {event.options.map((option) => (
                         <li key={option.id}>
                           <span className="font-semibold">{option.label}</span>
@@ -131,7 +134,7 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                     </ul>
                   </div>
 
-                  <p className="text-sm leading-relaxed text-foreground" data-testid={`proposal-reason-${event.id}`}>
+                  <p className="text-sm leading-relaxed text-muted-foreground" data-testid={`proposal-reason-${event.id}`}>
                     {event.aiReason}
                   </p>
 
@@ -149,20 +152,22 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                       <Button
                         variant="danger"
                         size="sm"
+                        className="rounded-xl"
                         disabled={isBusy || !actor}
                         onClick={() => void runDecision(event, 'REJECTED')}
                       >
                         {t('console.dashboard.approvalQueue.confirmRejectYes')}
                       </Button>
-                      <Button variant="secondary" size="sm" onClick={() => setConfirmingRejectId(null)}>
+                      <Button variant="secondary" size="sm" className="rounded-xl" onClick={() => setConfirmingRejectId(null)}>
                         {t('console.dashboard.approvalQueue.confirmRejectNo')}
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <Button
                         variant="primary"
                         size="sm"
+                        className="rounded-xl"
                         disabled={disabled}
                         onClick={() => void runDecision(event, 'APPROVED')}
                       >
@@ -171,6 +176,7 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                       <Button
                         variant="danger"
                         size="sm"
+                        className="rounded-xl"
                         disabled={disabled}
                         onClick={() => setConfirmingRejectId(event.id)}
                       >
@@ -178,7 +184,7 @@ export function ApprovalQueuePane({ proposals, actor, onResolved, decide = decid
                       </Button>
                     </div>
                   )}
-                </Card>
+                </div>
               </li>
             );
           })}

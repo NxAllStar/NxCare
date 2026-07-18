@@ -96,7 +96,7 @@ export function Heatmap({ rows, columns, cells, caption, className }: HeatmapPro
                     data-testid={`heatmap-cell-${cell.id}`}
                     aria-label={`${row}, ${column}: ${cell.levelLabel}, ${cell.valueLabel}`}
                     className={cn(
-                      'flex w-full min-w-[92px] flex-col items-start gap-1.5 rounded-xl border border-border p-3 text-left',
+                      'flex w-full min-w-[92px] flex-col items-start gap-1.5 rounded-xl p-3 text-left',
                       'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       TINT_CLASS[cell.level],

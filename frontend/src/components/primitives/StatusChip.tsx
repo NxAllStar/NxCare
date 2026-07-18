@@ -4,11 +4,12 @@
  * green=done/available, amber=waiting/pending, red=disruption/blocked,
  * blue=in-progress).
  *
- * BR-31 / NFR-USE-03: the enum CODE is English and is rendered as-is,
- * never translated - only the accompanying label localises. Do not
- * refactor this to show only the localised label; the code must stay
- * visible in the DOM for any of ExecutionStatus/PaymentStatus/
- * AppointmentStatus/CarePlanStatus values.
+ * BR-31 / NFR-USE-03: the enum CODE is English and never translated. It
+ * stays machine-readable in the DOM via the `data-code` attribute; the
+ * VISIBLE text is only the localised label (owner decision 2026-07-18:
+ * the raw code text next to the label read as clutter for clinical staff).
+ * Applies to any of ExecutionStatus/PaymentStatus/AppointmentStatus/
+ * CarePlanStatus values.
  */
 import { cn } from '@/lib/utils';
 import { useI18n, type DictKey } from '@/i18n';
@@ -91,7 +92,6 @@ export function StatusChip({ code, className, stacked = false }: StatusChipProps
         )}
       >
         <span className="text-sm font-semibold leading-none">{t(labelKey)}</span>
-        <span className="font-mono text-[10px] font-normal tracking-wide opacity-50">{code}</span>
       </span>
     );
   }
@@ -109,7 +109,6 @@ export function StatusChip({ code, className, stacked = false }: StatusChipProps
     >
       <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       <span>{t(labelKey)}</span>
-      <span className="font-mono text-[10px] font-normal tracking-wide opacity-40">{code}</span>
     </span>
   );
 }

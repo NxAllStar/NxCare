@@ -33,7 +33,7 @@ export function HeatmapPane({ initialGrid, tickIntervalMs = 4000 }: HeatmapPaneP
   }));
 
   return (
-    <Card className="flex flex-col gap-3" data-testid="heatmap-pane">
+    <Card className="flex h-full flex-col gap-3 p-5" data-testid="heatmap-pane">
       <SectionLabel>{t('console.dashboard.heatmap.title')}</SectionLabel>
       <Heatmap
         rows={grid.areas}

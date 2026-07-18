@@ -97,20 +97,20 @@ export function ConsoleShell() {
             24px inset as the content canvas (p-6), so both edges line up
             with the workspace below (design/ki-thuat-vien-sceen.png). */}
         <div className="flex min-w-0 flex-1 items-center">
-          <div className="flex w-[264px] shrink-0 items-center px-6">
+          <div className="flex w-[264px] shrink-0 items-center justify-center">
             <button
               type="button"
-              className="group flex shrink-0 items-center gap-2.5"
+              className="group flex shrink-0 items-center gap-3"
               onClick={() => navigate('/')}
             >
               <span
-                className="flex h-9 w-9 items-center justify-center bg-primary shadow-sm shadow-primary/25 transition-transform group-hover:scale-105"
+                className="flex h-11 w-11 items-center justify-center bg-primary shadow-sm shadow-primary/25 transition-transform group-hover:scale-105"
                 style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
               >
-                <span className="font-mono text-sm font-extrabold text-white">Nx</span>
+                <span className="font-mono text-sm font-extrabold text-white">NxC</span>
               </span>
-              <span className="select-none text-xl font-extrabold tracking-tight text-primary">
-                NxCare
+              <span className="select-none text-[26px] font-extrabold tracking-tight text-foreground">
+                Nx<span className="text-primary">Care</span>
               </span>
             </button>
           </div>
@@ -120,14 +120,8 @@ export function ConsoleShell() {
             <input
               type="text"
               placeholder="Tìm bệnh nhân / mã / phòng..."
-              className="w-full rounded-xl border border-border bg-muted/60 py-2.5 pl-11 pr-14 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground hover:border-primary/30 hover:bg-muted focus:border-primary/50 focus:bg-card focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-xl border border-border bg-muted/60 py-2.5 pl-11 pr-14 text-[15px] text-foreground outline-none transition-all placeholder:text-muted-foreground hover:border-primary/30 hover:bg-muted focus:border-primary/50 focus:bg-card focus:ring-2 focus:ring-primary/20"
             />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-xs font-medium text-muted-foreground"
-            >
-              &#8984;K
-            </span>
           </label>
         </div>
 
@@ -135,8 +129,8 @@ export function ConsoleShell() {
         <div className="flex shrink-0 items-center gap-14">
           {/* Clock */}
           <div className="hidden items-center gap-2 text-muted-foreground lg:flex">
-            <ClockIcon className="h-5 w-5" />
-            <span className="font-sans text-base font-semibold tabular-nums">{clock}</span>
+            <ClockIcon className="h-[22px] w-[22px]" />
+            <span className="font-sans text-lg font-semibold tabular-nums">{clock}</span>
           </div>
 
           {/* Alerts */}
@@ -172,10 +166,10 @@ export function ConsoleShell() {
 
           {/* User */}
           <div className="flex items-center gap-3">
-            <Avatar name={session?.displayName ?? '?'} className="h-10 w-10 text-base" />
+            <Avatar name={session?.displayName ?? '?'} className="h-11 w-11 text-lg" />
             <div className="hidden text-left leading-tight lg:block">
-              <div className="text-[15px] font-bold text-foreground">{session?.displayName}</div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              <div className="text-[17px] font-bold text-foreground">{session?.displayName}</div>
+              <div className="text-[13px] uppercase tracking-wider text-muted-foreground">
                 {role ? t(ROLE_LABEL_KEY[role]) : ''}
               </div>
             </div>
@@ -216,7 +210,7 @@ export function ConsoleShell() {
       <div className="relative flex flex-1 overflow-hidden">
         {/* Left nav sidebar */}
         <aside className="flex w-[264px] shrink-0 select-none flex-col border-r border-border bg-card">
-          <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
+          <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-5">
             {items.map((item) => {
               const Icon = SCREEN_ICON[item.id];
               return (
@@ -225,15 +219,36 @@ export function ConsoleShell() {
                   to={item.path}
                   className={({ isActive }) =>
                     cn(
-                      'group flex h-14 items-center gap-3.5 rounded-xl border px-4 text-base font-medium transition-all duration-150',
+                      'group relative flex h-[60px] items-center gap-3.5 rounded-2xl px-3.5 text-base font-medium transition-all duration-200',
                       isActive
-                        ? 'border-primary/15 bg-primary/10 font-semibold text-primary shadow-sm shadow-primary/5'
-                        : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
+                        ? 'bg-primary/10 font-semibold text-primary shadow-sm shadow-primary/10'
+                        : 'text-muted-foreground hover:translate-x-0.5 hover:bg-muted hover:text-foreground',
                     )
                   }
                 >
-                  <Icon className="h-[22px] w-[22px] shrink-0" />
-                  <span className="truncate">{t(item.navLabelKey)}</span>
+                  {({ isActive }) => (
+                    <>
+                      {/* Active tab indicator - soft pill on the item's left edge */}
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          'absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full bg-primary transition-opacity duration-200',
+                          isActive ? 'opacity-100' : 'opacity-0',
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors duration-200',
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/30'
+                            : 'bg-muted text-muted-foreground group-hover:bg-card group-hover:text-foreground',
+                        )}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </span>
+                      <span className="truncate">{t(item.navLabelKey)}</span>
+                    </>
+                  )}
                 </NavLink>
               );
             })}
@@ -243,13 +258,15 @@ export function ConsoleShell() {
           <div className="flex flex-col gap-3 p-4">
             <button
               type="button"
-              className="flex items-center gap-2.5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              <HelpIcon className="h-[18px] w-[18px] text-muted-foreground" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-card text-muted-foreground">
+                <HelpIcon className="h-[18px] w-[18px]" />
+              </span>
               Trợ giúp & Hỗ trợ
             </button>
             <div className="px-1 text-xs leading-relaxed text-muted-foreground">
-              <div>© 2024 NxCare</div>
+              <div>© 2026 NxCare</div>
               <div>v1.0.0</div>
             </div>
           </div>

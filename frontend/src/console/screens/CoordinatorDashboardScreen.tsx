@@ -107,21 +107,26 @@ export function CoordinatorDashboardScreen({ loadData = loadDashboardData }: Coo
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
             {kpis.map((k, idx) => {
               const Icon = k.icon;
+              const isTextValue = Number.isNaN(Number(k.value));
               return (
                 <Card
                   key={idx}
-                  className="group p-4 flex flex-col gap-3 border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                  className="group flex flex-col gap-3.5 border-border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {k.label}
                     </span>
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${k.iconClass}`}>
-                      <Icon className="h-4 w-4" />
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${k.iconClass}`}>
+                      <Icon className="h-[18px] w-[18px]" />
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-extrabold tracking-tight text-foreground font-mono tabular-nums">
+                    <span
+                      className={`font-extrabold tracking-tight text-foreground ${
+                        isTextValue ? 'text-[22px]' : 'font-mono text-3xl tabular-nums'
+                      }`}
+                    >
                       {k.value}
                     </span>
                     {k.unit && <span className="text-sm font-semibold text-muted-foreground">{k.unit}</span>}
@@ -145,8 +150,8 @@ export function CoordinatorDashboardScreen({ loadData = loadDashboardData }: Coo
                 </span>
                 <AIChip label="AI" />
               </div>
-              <Card className="flex flex-col gap-3 p-4 bg-card border-border shadow-sm">
-                <div className="flex h-40 items-end justify-between gap-2 border-b border-border pb-1">
+              <Card className="flex flex-1 flex-col gap-3 border-border bg-card p-5 shadow-sm">
+                <div className="flex h-48 flex-1 items-end justify-between gap-2 border-b border-border pb-1">
                   {forecast.map((f, idx) => {
                     const isPeak = f.load === peakLoad;
                     return (
