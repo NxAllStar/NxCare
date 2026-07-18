@@ -54,7 +54,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-025 | Patient app visual upgrade to iOS-native design (all screens + shell) per owner design | frontend-ui-dev | TASK-023 | P2 | 2 | Done |
 | TASK-026 | Hospital web console foundation, shell, staff login, role routing (SCR-03..07 stubs) | frontend-ui-dev | TASK-021, TASK-013 | P1 | 2 | Done |
 | TASK-027 | Console SCR-06 coordinator dashboard: heatmap + approval queue + reasoning stream (flagship) | frontend-ui-dev | TASK-026 | P1 | 2 | Active |
-| TASK-028 | Console SCR-03 consult and orders + SCR-04 doctor worklist | frontend-ui-dev | TASK-026 | P1 | 2 | Planned |
+| TASK-028 | Console SCR-03 consult and orders + SCR-04 doctor worklist | frontend-ui-dev | TASK-026 | P1 | 2 | Active |
 | TASK-029 | Console SCR-05 technician task view | frontend-ui-dev | TASK-026 | P2 | 2 | Planned |
 | TASK-030 | Console SCR-07 admin and audit console (audit search + simulator seed/config, role split) | frontend-ui-dev | TASK-026 | P2 | 2 | Planned |
 | TASK-031 | Console QA: Vitest sweep + Playwright golden-path e2e + review gates + secret-scan | qa-test | TASK-027, TASK-028, TASK-029, TASK-030 | P1 | 2 | Planned |

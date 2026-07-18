@@ -1,6 +1,6 @@
 ---
 title: "TASK-028: Console SCR-03 consult and orders + SCR-04 doctor worklist"
-status: Planned
+status: Active
 fr: FR-03
 owner: frontend-ui-dev
 deps: TASK-026
@@ -85,6 +85,7 @@ data inside the console shell.
 | Date | Who | What was done | Result |
 |------|-----|---------------|--------|
 | 2026-07-18 | orchestrator | Registered (Planned). Sequenced after TASK-027 (shares the console shell; serialize - one frontend-ui-dev at a time on src/console). | Planned |
+| 2026-07-18 | orchestrator | Flipped to Active. Branch feat/TASK-028-console-doctor-screens stacked off the TASK-027 tip (3c7404e) so the combined console base is a single coherent runnable tip. Read SCR-03/SCR-04 spec 10 sections + acceptance criteria. Dispatching frontend-ui-dev to build test-first from shared primitives (node v22). Velocity mode: security-reviewer deferred to pre-PR batch per owner; test-first + tsc + Vitest + code-review kept. | Active |
 
 ## Result
 
