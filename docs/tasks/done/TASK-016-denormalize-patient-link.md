@@ -58,6 +58,9 @@ touches shared entities every agent lane reads.
 | 2026-07-18 | security-reviewer | Access-control review: cross-patient denied, account.patient_id None denied, AuditLogEntry-unset fails closed; no secrets/PII (synthetic UUIDs only) | Reviewed - no blockers; 1 Minor, 2 Info |
 | 2026-07-18 | orchestrator | /secret-scan on diff: no credentials, no forbidden files, no JWT-shaped strings (only synthetic uuid4()/placeholder examples; "sk-" grep hits were the "SK-0" in "TASK-01x", false positive) | Clean |
 | 2026-07-18 | orchestrator | Registered TASK-031 for the reviewers' shared follow-up (enforce denormalized patient_id invariant at write boundaries + thread patient context into audit). Committed on branch; moved TASK-016 to Done | Done |
+| 2026-07-18 | tuan.nguyen15 | Committed the previously-excluded `.gitignore` `*.pyc` hygiene edit as `75aeeee` (conventional `fix:` message); branch HEAD is now `75aeeee` | Committed |
+| 2026-07-18 | orchestrator | Fresh-session re-verification for push: working tree clean (no stray untracked/uncommitted files); correct diff base is `cnv-dev` (main and cnv-dev are unrelated histories, no merge-base, so `main...` is empty); diff touches the 8 code/spec files + docs/tasks (TASK-016 move, TASK-031, board) + `.gitignore`; re-ran pytest 73 passed and ruff clean; all four gates confirmed logged above; no CI configured (no `.github/workflows/`). Ready to push | Verified - ready |
+| 2026-07-18 | orchestrator | Pushed branch to origin (`git push -u origin feat/TASK-016-denormalize-patient-link`). PR/merge left for the human owner - author does not merge own change (git-workflow.md) | Pushed |
 
 ## Result
 
@@ -74,7 +77,8 @@ Follow-up: the denormalized `patient_id` is an authz-critical invariant not yet 
 (both reviewers) - tracked as TASK-031. No production write path constructs these four entities yet,
 so the risk is latent.
 
-Commit: on branch `feat/TASK-016-denormalize-patient-link` (see board). NOT yet merged - the author
-does not merge their own reviewed change; merge/PR awaits the owner's decision. An out-of-scope
-uncommitted `.gitignore` (`+*.pyc`) change was deliberately excluded from the commit and left in the
-working tree for the owner to decide (see the repo-hygiene note in orchestration).
+Commit: on branch `feat/TASK-016-denormalize-patient-link` (see board), HEAD `75aeeee`. NOT yet
+merged - the author does not merge their own reviewed change; merge/PR awaits the owner's decision.
+The `.gitignore` `*.pyc` hygiene edit that Wave-1 close-out had left in the working tree was
+subsequently committed by the owner as `75aeeee` with a conventional `fix:` message (it is now part
+of the branch's committed diff, not an uncommitted change).
