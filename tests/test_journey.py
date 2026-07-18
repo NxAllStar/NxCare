@@ -219,8 +219,8 @@ def test_ac_06_2_fasting_question_refuses_eating_and_brings_fasting_task_forward
     fasting_service_type = repo.save(ServiceType(code="FASTING_BLOOD", display_label="x",
                                                  requires_fasting=True))
     fasting_order = repo.save(
-        ServiceOrder(diagnosis_id=uuid4(), service_type_id=fasting_service_type.id,
-                     ordered_by=uuid4()))
+        ServiceOrder(patient_id=patient.id, diagnosis_id=uuid4(),
+                     service_type_id=fasting_service_type.id, ordered_by=uuid4()))
     fasting.service_order_id = fasting_order.id
     fasting.sequence_index = 2  # currently last; should move earlier
     repo.save(fasting)
