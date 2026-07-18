@@ -4,11 +4,12 @@
  * green=done/available, amber=waiting/pending, red=disruption/blocked,
  * blue=in-progress).
  *
- * BR-31 / NFR-USE-03: the enum CODE is English and is rendered as-is,
- * never translated - only the accompanying label localises. Do not
- * refactor this to show only the localised label; the code must stay
- * visible in the DOM for any of ExecutionStatus/PaymentStatus/
- * AppointmentStatus/CarePlanStatus values.
+ * BR-31 / NFR-USE-03: the enum CODE is English and never translated. It
+ * stays machine-readable in the DOM via the `data-code` attribute; the
+ * VISIBLE text is only the localised label (owner decision 2026-07-18:
+ * the raw code text next to the label read as clutter for clinical staff).
+ * Applies to any of ExecutionStatus/PaymentStatus/AppointmentStatus/
+ * CarePlanStatus values.
  */
 import { cn } from '@/lib/utils';
 import { useI18n, type DictKey } from '@/i18n';
@@ -68,12 +69,32 @@ const VARIANT_CLASSES: Record<StatusVariant, string> = {
 interface StatusChipProps {
   code: StatusCode;
   className?: string;
+  /** Two-line variant (label over code) used by the console queue cards
+   * (design/doctor_screen.png). Default stays the one-line chip. */
+  stacked?: boolean;
 }
 
-export function StatusChip({ code, className }: StatusChipProps) {
+export function StatusChip({ code, className, stacked = false }: StatusChipProps) {
   const { t } = useI18n();
   const variant = VARIANT_BY_CODE[code];
   const labelKey = `status.${code}` as DictKey;
+
+  if (stacked) {
+    return (
+      <span
+        data-testid="status-chip"
+        data-code={code}
+        data-variant={variant}
+        className={cn(
+          'inline-flex flex-col items-center gap-0.5 rounded-lg border px-3 py-1.5',
+          VARIANT_CLASSES[variant],
+          className,
+        )}
+      >
+        <span className="text-sm font-semibold leading-none">{t(labelKey)}</span>
+      </span>
+    );
+  }
 
   return (
     <span
@@ -81,14 +102,13 @@ export function StatusChip({ code, className }: StatusChipProps) {
       data-code={code}
       data-variant={variant}
       className={cn(
-        'inline-flex items-center gap-2 rounded-pill border px-3 py-1 text-xs font-medium',
+        'inline-flex items-center gap-2 rounded-pill border px-3 py-1.5 text-sm font-medium',
         VARIANT_CLASSES[variant],
         className,
       )}
     >
       <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       <span>{t(labelKey)}</span>
-      <span className="font-mono text-[10px] uppercase tracking-wide opacity-70">{code}</span>
     </span>
   );
 }

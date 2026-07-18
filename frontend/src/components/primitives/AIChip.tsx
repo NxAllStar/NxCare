@@ -23,7 +23,7 @@ export function AIChip({ label, className }: AIChipProps) {
       data-testid="ai-chip"
       className={cn(
         'inline-flex items-center gap-1 rounded-pill border border-primary/30 bg-primary/10',
-        'px-3 py-1 text-xs font-medium text-primary',
+        'px-3 py-1 text-sm font-medium text-primary',
         className,
       )}
     >

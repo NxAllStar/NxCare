@@ -3,32 +3,37 @@
   "color": {
     "neutral": {
       "0": "#FFFFFF",
-      "50": "#F7F8F9",
-      "100": "#EDEEF0",
-      "200": "#E2E5E8",
+      "50": "#FAFBF9",
+      "100": "#F6F7F4",
+      "200": "#E6E8E2",
       "300": "#C7CDD2",
       "400": "#9BA3AB",
-      "500": "#5A626B",
-      "900": "#12151A"
+      "500": "#616C66",
+      "900": "#152019"
+    },
+    "consolePrimary": {
+      "description": "Console (staff web) brand blue per frontend/design/*.png - scoped via .console-surface in index.css; the patient app keeps color.primary below",
+      "500": "#2563EB",
+      "dark": "#3B82F6"
     },
     "primary": {
-      "description": "Calm clinical teal/blue — trustworthy brand accent",
-      "50": "#E6F1F4",
-      "100": "#CCE3E9",
-      "300": "#5AA7B8",
+      "description": "NxCare sky blue - brand primary (matches component.buttonPrimary/fab/tabBar below)",
+      "50": "#E6F1F5",
+      "100": "#CCE3EB",
+      "300": "#5AAFC7",
       "500": "#0E7490",
       "600": "#0B5C73",
-      "700": "#08404F"
+      "700": "#084655"
     },
     "status": {
-      "success": { "base": "#2F9D66", "bg": "rgba(47,157,102,0.10)", "label": "done / available" },
+      "success": { "base": "#0E9F6E", "bg": "rgba(14,159,110,0.10)", "label": "done / available" },
       "warning": { "base": "#D9902B", "bg": "rgba(217,144,43,0.10)", "label": "waiting / pending" },
       "danger":  { "base": "#E5484D", "bg": "rgba(229,72,77,0.08)",  "label": "disruption / blocked" },
-      "info":    { "base": "#0E7490", "bg": "rgba(14,116,144,0.10)", "label": "in-progress (uses primary)" }
+      "info":    { "base": "#0E9F6E", "bg": "rgba(14,159,110,0.10)", "label": "in-progress" }
     },
     "heatmap": {
       "description": "Sequential load scale, green (low) → amber (medium) → red (high)",
-      "1": "#2F9D66",
+      "1": "#0E9F6E",
       "2": "#6BAE55",
       "3": "#C7A93D",
       "4": "#D9902B",
@@ -36,27 +41,27 @@
       "6": "#E5484D"
     },
     "surface": {
-      "page": "#EDEEF0",
+      "page": "#F6F7F4",
       "card": "#FFFFFF",
-      "cardMuted": "#F7F8F9",
-      "border": "#E2E5E8",
+      "cardMuted": "#FAFBF9",
+      "border": "#E6E8E2",
       "overlay": "rgba(0,0,0,0.35)"
     },
     "text": {
-      "primary": "#12151A",
-      "secondary": "#5A626B",
+      "primary": "#152019",
+      "secondary": "#616C66",
       "tertiary": "#9BA3AB",
       "onPrimary": "#FFFFFF",
       "link": "#0E7490",
       "linkHover": "#0B5C73"
     },
     "dark": {
-      "description": "Stub for future dark mode — not used in current screens",
-      "page": "#0B0D10",
-      "card": "#15181C",
-      "cardMuted": "#1B1F24",
-      "border": "#2A2F35",
-      "textPrimary": "#F2F3F4",
+      "description": "Forest slate premium dark mode",
+      "page": "#0C0F0D",
+      "card": "#171D1A",
+      "cardMuted": "#1C2320",
+      "border": "#2B332F",
+      "textPrimary": "#EAEDE9",
       "textSecondary": "#9BA3AB"
     }
   },

@@ -18,10 +18,10 @@ function renderWithLocale(code: Parameters<typeof StatusChip>[0]['code']) {
 }
 
 describe('StatusChip (cross-cutting UI rules + BR-31)', () => {
-  it('renders the English code in the DOM (never translated)', () => {
+  it('keeps the English code machine-readable via data-code, without rendering it as visible text', () => {
     renderWithLocale('PENDING');
     expect(screen.getByTestId('status-chip')).toHaveAttribute('data-code', 'PENDING');
-    expect(screen.getByText('PENDING')).toBeInTheDocument();
+    expect(screen.queryByText('PENDING')).not.toBeInTheDocument();
   });
 
   it('renders the localised Vietnamese label alongside the code, by default', () => {

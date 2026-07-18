@@ -9,7 +9,7 @@
  * are demo affordances that only advance the onboarding state, matching the
  * prototype.
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // ---- Static demo data (exact content from the design) ----
 
@@ -194,9 +194,89 @@ const QUICK_REPLIES: Record<string, { user: string; ai: string }> = {
   where: { user: 'Phòng siêu âm ở đâu?', ai: 'Phòng S2, tầng 1 — đi thẳng từ đây khoảng 30 bước, bên tay phải quầy nước.' },
 };
 
+// ---- URL hash <-> navigation sync ----
+//
+// The companion app keeps its whole navigation in React state, so without a
+// URL anchor the browser Back button (and the iOS swipe-back gesture) leaves
+// the app entirely and loses every screen. We mirror only the navigation
+// slice of the state into `location.hash` - `#home`, `#appointments/book`,
+// `#journey/step/xray`, `#records/result/2`, `#more/billing` - so each screen
+// change pushes a history entry and Back returns to the previous screen with
+// its state intact. The hash is the anchor, never the source of truth for
+// content data.
+
+const APPT_SUBS: ApptScreen[] = ['book', 'intake', 'checkin', 'prep'];
+const RECORDS_SUBS: RecordsScreen[] = ['results', 'medications', 'recovery', 'visitSummary'];
+const MORE_SUBS: MoreScreen[] = ['billing', 'family', 'settings'];
+
+/** The navigation slice of the state encoded as a hash path (no leading `#`). */
+export function navToHash(s: CompanionState): string {
+  if (s.appStage !== 'main') return '';
+  switch (s.tab) {
+    case 'home':
+      return 'home';
+    case 'appointments':
+      return s.apptScreen === 'list' ? 'appointments' : `appointments/${s.apptScreen}`;
+    case 'journey':
+      return s.journeyScreen === 'timeline' ? 'journey' : `journey/step/${s.journeyStepId}`;
+    case 'records':
+      if (s.recordsScreen === 'list') return 'records';
+      if (s.recordsScreen === 'resultDetail') return `records/result/${s.selectedResult}`;
+      return `records/${s.recordsScreen}`;
+    case 'more':
+      return s.moreScreen === 'menu' ? 'more' : `more/${s.moreScreen}`;
+    default:
+      return '';
+  }
+}
+
+/**
+ * Parse a hash into a navigation patch. Returns an empty object for an
+ * unrecognised hash, so the caller can tell "no anchor" from "go home".
+ * Unknown sub-segments fall back to the tab's root screen rather than
+ * throwing - the hash is untrusted input from the URL bar.
+ */
+export function hashToNav(rawHash: string): Partial<CompanionState> {
+  const clean = rawHash.replace(/^#/, '').replace(/^\/+/, '');
+  if (!clean) return {};
+  const [tab, ...rest] = clean.split('/');
+  switch (tab) {
+    case 'home':
+      return { tab: 'home' };
+    case 'appointments': {
+      const sub = rest[0] as ApptScreen | undefined;
+      return { tab: 'appointments', apptScreen: sub && APPT_SUBS.includes(sub) ? sub : 'list' };
+    }
+    case 'journey':
+      if (rest[0] === 'step' && rest[1]) {
+        return { tab: 'journey', journeyScreen: 'step', journeyStepId: rest[1] };
+      }
+      return { tab: 'journey', journeyScreen: 'timeline' };
+    case 'records': {
+      if (rest[0] === 'result' && rest[1] && Number.isFinite(Number(rest[1]))) {
+        return { tab: 'records', recordsScreen: 'resultDetail', selectedResult: Number(rest[1]) };
+      }
+      const sub = rest[0] as RecordsScreen | undefined;
+      return { tab: 'records', recordsScreen: sub && RECORDS_SUBS.includes(sub) ? sub : 'list' };
+    }
+    case 'more': {
+      const sub = rest[0] as MoreScreen | undefined;
+      return { tab: 'more', moreScreen: sub && MORE_SUBS.includes(sub) ? sub : 'menu' };
+    }
+    default:
+      return {};
+  }
+}
+
 export function initialState(startAtHome = false): CompanionState {
+  // A navigation hash present at load (deep link or a reload after the user
+  // navigated) restores that screen and enters the main app directly, so a
+  // refresh does not drop the patient back to onboarding.
+  const hashNav = typeof window !== 'undefined' ? hashToNav(window.location.hash) : {};
+  const hasHashNav = Object.keys(hashNav).length > 0;
+  const inMain = startAtHome || hasHashNav;
   return {
-    appStage: startAtHome ? 'main' : 'onboarding',
+    appStage: inMain ? 'main' : 'onboarding',
     onboardStep: 'login',
     tab: 'home',
     apptScreen: 'list',
@@ -211,7 +291,8 @@ export function initialState(startAtHome = false): CompanionState {
     recordsScreen: 'list',
     selectedResult: 2,
     moreScreen: 'menu',
-    locationMode: startAtHome ? 'inside' : 'outside',
+    locationMode: inMain ? 'inside' : 'outside',
+    ...hashNav,
     chatOpen: false,
     chatMessages: [{ from: 'ai', text: 'Chào chị, em đang theo dõi lộ trình khám hôm nay. Chị cần hỏi gì cứ nhắn em nhé.' }],
     notifOpen: false,
@@ -314,6 +395,36 @@ export function useCompanionState(startAtHome = false): { s: CompanionState; a: 
 
   const patch = useCallback((next: Partial<CompanionState> | ((prev: CompanionState) => Partial<CompanionState>)) => {
     setS((prev) => ({ ...prev, ...(typeof next === 'function' ? next(prev) : next) }));
+  }, []);
+
+  // Anchor the current screen in the URL hash so a screen change pushes a
+  // history entry. navHash is the only value the write depends on, so the
+  // effect fires exactly when the screen changes, never on content edits.
+  const navHash = navToHash(s);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const current = window.location.hash.replace(/^#/, '');
+    if (navHash && navHash !== current) {
+      window.location.hash = navHash;
+    }
+  }, [navHash]);
+
+  // Follow Back/Forward: restore the navigation the hash points at. The
+  // no-op guard (comparing encoded navigation) absorbs the echo of our own
+  // hash writes above, so the two effects cannot loop.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onHashChange = () => {
+      const nav = hashToNav(window.location.hash);
+      if (Object.keys(nav).length === 0) return;
+      setS((prev) => {
+        if (prev.appStage !== 'main') return prev;
+        const next = { ...prev, ...nav };
+        return navToHash(next) === navToHash(prev) ? prev : next;
+      });
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   const showToast = useCallback((msg: string) => {

@@ -290,6 +290,8 @@ Thumbs.db
 #  Design source bundle (1.5MB reference; remove this line if
 #  you want to keep the .html design file in the repo)
 # ============================================================
+frontend/design
+
 Patient Companion App.html
 
 **/__pycache__/
