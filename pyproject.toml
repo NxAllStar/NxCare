@@ -1,0 +1,30 @@
+[project]
+name = "vaic"
+version = "0.1.0"
+description = "VAIC - AI Care Pathway Coordinator (hackathon demo)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "redis>=5.0",
+    "simpy>=4.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
