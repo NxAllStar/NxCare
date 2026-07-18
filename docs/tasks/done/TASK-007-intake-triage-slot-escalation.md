@@ -1,6 +1,6 @@
 ---
 title: "TASK-007: Intake triage + slot recommendation + emergency escalation"
-status: Active
+status: Done
 fr: "FR-01, FR-02, BF-05"
 owner: intake-dev
 deps: "TASK-004, TASK-005"
@@ -164,7 +164,13 @@ Follow-ups raised by the review gate (cross-lane - NOT fixed in intake scope; ow
 | 2026-07-18 | intake-dev | Follow-up fix to the two in-scope Minor findings from the review gate. Fix 1 (code-reviewer Minor #3, state-machine bypass): `_book_appointment` in `agent.py` now creates the `Appointment` with `status=PROPOSED` first, saves it, then calls `assert_transition(APPOINTMENT_TRANSITIONS, PROPOSED, BOOKED)` (imported read-only from `models.transitions`, not modified - the edge exists in the table) before re-saving an updated copy with `status=BOOKED` under the SAME `id` (`InMemoryRepository.save` keys by id, so `repo.list(Appointment)` still returns exactly one row - existing test `test_book_appointment_with_staff_confirmation_and_no_emergency_is_booked` unaffected). Fix 2 (code-reviewer Minor #2, lost `slot_start`): the same re-save sets `slot_start` from a new `_BOOKING_REFERENCE_DATE` (fixed UTC `2026-01-01`) plus `timedelta(hours=params.hour)` - deterministic, not timezone-ambiguous, documented inline as a demo placeholder for the real calendar day a production booking would use. B1 (capacity-guard limitation) legibility: added an inline comment at the `capacity_per_hour` check in `agent.py`'s `_book_appointment` and at `_has_room` in `slots.py` stating the guard counts `owner_queue` (Tasks) not booked Appointments, pending the Appointment<->owner/slot data-model link (B1) - guard LOGIC unchanged, no entity/checker edit. B2 (auth binding) and B3 (audit reasoning PII) left untouched, out of scope. `pytest tests/test_intake.py -q`: 26 passed, no test edited. `pytest -q` (full suite): 96 passed, no regression. `ruff check src/vaic/agents/intake/`: initially 1 E501 (line too long) on the model_copy call, fixed by extracting the update dict to a local variable; re-run: all checks passed. Diff confined to `src/vaic/agents/intake/agent.py` and `src/vaic/agents/intake/slots.py` (comments + the booking construction) plus this session-log row; no edits to `tests/`, `src/vaic/models/`, `src/vaic/tools/`, `src/vaic/forecast/`, `src/vaic/state/`, `src/vaic/agents/core/`, or `.gitignore` (the tracked `.gitignore`/`__pycache__` diffs pre-date this session, carried over from the prior review-gate note, not touched here); no secrets or PII in the diff; not committed | GREEN |
 | 2026-07-18 | orchestrator | Re-verified after fix: full suite 96 passed, ruff clean, diff scoped to intake+tests+docs(+.gitignore). Secret-scan gate: gitleaks unavailable, ran pattern scan (credentials/keys/.env/conn-strings) over src/vaic/agents/intake/ + tests/test_intake.py - CLEAN; security-reviewer independently confirmed no secrets and synthetic-only test data | Secret-scan clean |
 | 2026-07-18 | orchestrator | ORCHESTRATION COMPLETE - all gates run and logged (spec-guardian, qa-test RED->GREEN, code+security review, secret-scan). No Blockers. Handing back to Vuong for review/commit/merge decision. Task stays Active (unmerged, open decisions B1/B2). NOT committed, NOT merged, per mission | Handed back to Vuong |
+| 2026-07-18 | orchestrator | Merged into main via PR #4. Merged origin/main into the branch first (fast-forward pulled TASK-016 close-out, no conflict on intake's own files - the only conflict was 2 stray `__pycache__/*.pyc` build artifacts already untracked on main, removed). Registered findings B1/B2/B3 as follow-up tasks TASK-035 (Appointment owner/slot link), TASK-036 (bind confirmation signals to session), TASK-037 (reasoning-PII guard); rows read back and confirmed | Done |
 
 ## Result
 
-<Filled when the task moves to Done.>
+Intake Agent (FR-01 conversational triage, FR-02 least-crowded slot recommendation, BF-05 emergency
+escalation) implemented in `src/vaic/agents/intake/`, merged to `main` via PR #4. Review gate closed
+with 0 Blockers; in-scope minors (state-machine bypass, lost slot_start) fixed in the same PR; three
+cross-lane findings tracked as follow-ups: TASK-035 (B1, capacity guard needs an Appointment
+owner/slot link), TASK-036 (B2, bind staff_confirmed/emergency_suspected to the authenticated
+session), TASK-037 (reasoning-PII guard on the audit log).
