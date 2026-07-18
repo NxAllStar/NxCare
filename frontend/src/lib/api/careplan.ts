@@ -101,8 +101,27 @@ export function openCarePlanStream(patientId: string, onUpdate: () => void): () 
   return () => source.close();
 }
 
-/** Doctor's write path: sign a diagnosis + ordered tests and get the proposed route back. */
-export async function generateCarePlan(params: GenerateCarePlanParams): Promise<{ carePlanId: string }> {
+/** One step of the proposed route returned by `/generate` (no execution state yet - just proposed). */
+export interface RouteStepOut {
+  taskId: string;
+  serviceTypeCode: string;
+  serviceTypeLabel: string;
+  resourceId: string;
+  start: string | null;
+  durationMin: number;
+  sequenceIndex: number;
+}
+
+export interface GenerateCarePlanResult {
+  carePlanId: string;
+  status: string;
+  allSlotted: boolean;
+  route: RouteStepOut[];
+}
+
+/** Doctor's write path: sign a diagnosis + ordered tests and get the proposed route back - the SAME
+ * route the patient then reads via `/active`, so the doctor's preview and the patient app match. */
+export async function generateCarePlan(params: GenerateCarePlanParams): Promise<GenerateCarePlanResult> {
   const response = await fetch(`${API_BASE_URL}/api/careplan/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -118,8 +137,7 @@ export async function generateCarePlan(params: GenerateCarePlanParams): Promise<
   if (!response.ok) {
     throw new Error(`care plan generate failed: ${response.status}`);
   }
-  const body = (await response.json()) as { carePlanId: string };
-  return { carePlanId: body.carePlanId };
+  return (await response.json()) as GenerateCarePlanResult;
 }
 
 function mapActiveCarePlan(body: ActiveCarePlanResponse, patientId: string): CarePlanView {

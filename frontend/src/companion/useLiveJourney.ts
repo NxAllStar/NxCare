@@ -9,73 +9,30 @@
  * keeps rendering the design's static steps exactly as before - so the clone is untouched until a
  * real order exists.
  *
+ * The step mapping (room per service, ordering, active-step marker) is the SHARED
+ * `toCarePlanSteps` (lib/api/careplanDisplay), the same one the doctor console renders its care-plan
+ * preview with, so the patient's journey and the doctor's view are identical for the same plan.
+ *
  * Identity is fixed to the design's patient (Nguyen Thi Lan, whose demo OTP spells 941207), matching
  * `PATIENT_NAME` / `OTP_DIGITS` in `state.ts`; that same `patient_code` is what the console signs
  * orders under, so both surfaces resolve to one backend patient.
  */
 import { useEffect, useState } from 'react';
 import * as careplanApi from '@/lib/api/careplan';
+import { toCarePlanSteps } from '@/lib/api/careplanDisplay';
 import type { JourneyStep } from './state';
 
 const COMPANION_PATIENT_CODE = 'BN-941207';
 
-// The room a service happens in is a property of the SERVICE, not of the queue-assigned technician
-// station (the backend routes by load, so `resourceId` is just whichever station was least busy).
-// Mapping by `serviceTypeCode` is what gives each step its real location - "Lấy máu -> Phòng lấy
-// máu", "Siêu âm -> Phòng siêu âm" - instead of a generic station label. Codes match the seeded
-// catalog (api/demo_state.py DEMO_SERVICE_CATALOG).
-const SERVICE_ROOMS: Record<string, string> = {
-  BLOOD_TEST: 'Phòng lấy máu – Tầng 1',
-  XRAY_CHEST: 'Phòng X-quang – Tầng 1',
-  XRAY_ABDOMEN: 'Phòng X-quang – Tầng 1',
-  CT_CHEST: 'Phòng CT – Tầng 2',
-  ULTRASOUND_ABDOMEN: 'Phòng siêu âm – Tầng 1',
-  ENDOSCOPY_GASTRIC: 'Phòng nội soi – Tầng 2',
-};
-
-const SERVICE_DIRECTIONS: Record<string, string> = {
-  BLOOD_TEST: 'Khu lấy máu ở tầng 1, ngay cạnh quầy tiếp nhận.',
-  XRAY_CHEST: 'Phòng X-quang tầng 1, đi thẳng từ khu chờ rồi rẽ phải.',
-  XRAY_ABDOMEN: 'Phòng X-quang tầng 1, đi thẳng từ khu chờ rồi rẽ phải.',
-  CT_CHEST: 'Phòng CT tầng 2, lên thang máy khu A.',
-  ULTRASOUND_ABDOMEN: 'Phòng siêu âm tầng 1, đối diện quầy nước.',
-  ENDOSCOPY_GASTRIC: 'Phòng nội soi tầng 2, cạnh thang máy khu A.',
-};
-
-function timeLabel(iso: string | null, upcoming: boolean): string {
-  if (!iso) return '';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  const hh = String(date.getUTCHours()).padStart(2, '0');
-  const mm = String(date.getUTCMinutes()).padStart(2, '0');
-  return `${upcoming ? '~' : ''}${hh}:${mm}`;
-}
-
 function toJourneySteps(tasks: careplanApi.PatientTaskOut[]): JourneyStep[] {
-  const ordered = [...tasks].sort((a, b) => a.sequenceIndex - b.sequenceIndex);
-  const steps: JourneyStep[] = ordered.map((task) => {
-    const status: JourneyStep['status'] =
-      task.executionStatus === 'DONE'
-        ? 'done'
-        : task.executionStatus === 'IN_PROGRESS'
-          ? 'active'
-          : 'upcoming';
-    return {
-      id: task.taskId,
-      label: task.serviceTypeLabel,
-      time: task.start ? timeLabel(task.start, status !== 'done') : `~${task.durationMin} phút`,
-      status,
-      room: SERVICE_ROOMS[task.serviceTypeCode] ?? task.serviceTypeLabel,
-      directions: SERVICE_DIRECTIONS[task.serviceTypeCode],
-    };
-  });
-  // Backend tasks start LOCKED (unpaid) so none is IN_PROGRESS - give the timeline a visible current
-  // step by marking the first not-yet-done step active, mirroring the design's single active node.
-  if (steps.length > 0 && !steps.some((step) => step.status === 'active')) {
-    const firstPending = steps.find((step) => step.status !== 'done');
-    if (firstPending) firstPending.status = 'active';
-  }
-  return steps;
+  return toCarePlanSteps(tasks).map((step) => ({
+    id: step.id,
+    label: step.serviceLabel,
+    time: step.time,
+    status: step.status,
+    room: step.room,
+    directions: step.directions,
+  }));
 }
 
 /**
