@@ -28,19 +28,19 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from ..agents.intake.arrival import confirm_arrival_slot, recommend_arrival_slots
+from ..agents.intake.arrival import confirm_arrival_slot, summarize_reservations
+from ..agents.intake.arrival_chat import recommend_arrival_times
+from ..agents.intake.arrival_llm_client import build_arrival_chat_llm
 from ..agents.intake.emergency import detect_emergency
 from ..agents.intake.llm_client import RuleBasedTriageLLM, TriageLLMError, build_triage_llm
 from ..agents.intake.slots import recommend_slots
 from ..agents.intake.triage import extract_triage
 from ..forecast import ForecastLLMError
-from ..models import Resource, ResourceType
+from ..models import PriorityLevel
 from ..state import Repository
 from .demo_state import (
     ARRIVAL_DEMO_ANCHOR,
     ARRIVAL_DEMO_DAYS,
-    ARRIVAL_DEMO_HOURS,
-    ARRIVAL_DEPARTMENT_ID,
     DEMO_OWNER_BUSY,
     DEMO_OWNER_LIGHT,
 )
@@ -127,27 +127,24 @@ class IntakeChatResponse(BaseModel):
 class ArrivalSuggestRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    text: str  # the patient's chat message; untrusted content, used as triage DATA only
+    text: str  # the patient's chat message; untrusted content, used as DATA only
 
 
-class ArrivalSlotOut(BaseModel):
+class ArrivalBlockOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    slotId: str  # "<ownerId>|<ISO start>" - opaque handle the confirm call echoes back
-    ownerId: str
-    specialty: str
-    start: str
-    participants: int  # how many people are already booked at this slot
-    etaLabel: str
-    loadLevel: str
+    date: str  # YYYY-MM-DD
+    startHour: int
+    endHour: int
+    reservationCount: int
+    reason: str
 
 
 class ArrivalSuggestResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    reply: ChatMessageOut
-    specialty: str
-    suggestions: list[ArrivalSlotOut]
+    reply: ChatMessageOut  # the agent's natural-language answer
+    recommendations: list[ArrivalBlockOut]
     emergencySuspected: bool
 
 
@@ -156,15 +153,15 @@ class ArrivalConfirmRequest(BaseModel):
 
     patientId: str
     specialty: str
-    ownerId: str
-    start: str  # ISO datetime of the accepted slot
+    start: str  # ISO datetime of the accepted time
+    ownerId: str | None = None  # optional; a time-block arrival has no assigned doctor yet
 
 
 class ArrivalConfirmResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     appointmentId: str
-    ownerId: str
+    ownerId: str | None
     start: str
     status: str
 
@@ -177,6 +174,7 @@ def build_intake_router(repo: Repository) -> APIRouter:
     """
     router = APIRouter(prefix="/api/intake", tags=["intake"])
     triage_llm = build_triage_llm()  # real HttpTriageLLM when configured, else RuleBasedTriageLLM
+    arrival_llm = build_arrival_chat_llm()  # real HttpArrivalChatLLM when configured, else fallback
 
     @router.post("/chat", response_model=IntakeChatResponse)
     def chat(body: IntakeChatRequest) -> IntakeChatResponse:
@@ -248,81 +246,57 @@ def build_intake_router(repo: Repository) -> APIRouter:
 
     @router.post("/arrival/suggest", response_model=ArrivalSuggestResponse)
     def arrival_suggest(body: ArrivalSuggestRequest) -> ArrivalSuggestResponse:
-        """Chat -> triage -> suggest the top 3 least-crowded, soonest arrival times (FR-02)."""
-        try:
-            triage = extract_triage(body.text, triage_llm)
-        except (TriageLLMError, ValidationError) as exc:
-            # Degrade this request to the deterministic extractor, never a 500 (ai-governance.md).
-            logger.warning("arrival triage degraded to rule-based fallback: %s", exc)
-            triage = extract_triage(body.text, RuleBasedTriageLLM())
-        emergency = triage.emergency_suspected or detect_emergency(body.text, triage.priority_level)
+        """Agent answers when to come: retrieve reservations -> LLM reasons -> time-block advice."""
         now = datetime.now(UTC).isoformat()
 
-        if emergency:
+        # Safety gate first (BF-05): a red-flag message is never answered with "come tomorrow".
+        # Deterministic check on the raw text - no LLM needed to refuse to schedule an emergency.
+        if detect_emergency(body.text, PriorityLevel.ROUTINE):
             return ArrivalSuggestResponse(
                 reply=ChatMessageOut(
                     id=str(uuid4()), sender="agent", text=_EMERGENCY_REPLY_VI,
                     createdAt=now, aiGenerated=True,
                 ),
-                specialty=triage.specialty,
-                suggestions=[],
+                recommendations=[],
                 emergencySuspected=True,
             )
 
-        # Candidate owners: available doctors in the arrival department (dept-scoped, ADR-003).
-        candidates = [
-            resource.id
-            for resource in repo.list(
-                Resource, type=ResourceType.DOCTOR, department_id=ARRIVAL_DEPARTMENT_ID
-            )
-            if resource.is_available
-        ]
-        slots = recommend_arrival_slots(
-            repo,
-            triage.specialty,
-            candidates,
-            ARRIVAL_DEMO_ANCHOR,
-            days=ARRIVAL_DEMO_DAYS,
-            hours=ARRIVAL_DEMO_HOURS,
-            llm=_FORECAST_LLM,
-            top_n=3,
-        )
-        suggestions = [
-            ArrivalSlotOut(
-                slotId=f"{slot.owner_id}|{slot.start.isoformat()}",
-                ownerId=str(slot.owner_id),
-                specialty=triage.specialty,
-                start=slot.start.isoformat(),
-                participants=slot.participants,
-                etaLabel=_eta_label(slot.eta_minutes),
-                loadLevel=_load_level(slot.eta_minutes),
-            )
-            for slot in slots
-        ]
+        # Grounding: search the DB for reservations vs working hours (code), then the agent reasons.
+        summary = summarize_reservations(repo, ARRIVAL_DEMO_ANCHOR, ARRIVAL_DEMO_DAYS)
+        recommendation = recommend_arrival_times(body.text, summary, arrival_llm)
+
         return ArrivalSuggestResponse(
             reply=ChatMessageOut(
-                id=str(uuid4()), sender="agent", text=_ROUTINE_REPLY_VI,
+                id=str(uuid4()), sender="agent", text=recommendation.message,
                 createdAt=now, aiGenerated=True,
             ),
-            specialty=triage.specialty,
-            suggestions=suggestions,
+            recommendations=[
+                ArrivalBlockOut(
+                    date=block.date,
+                    startHour=block.start_hour,
+                    endHour=block.end_hour,
+                    reservationCount=block.reservation_count,
+                    reason=block.reason,
+                )
+                for block in recommendation.recommendations
+            ],
             emergencySuspected=False,
         )
 
     @router.post("/arrival/confirm", response_model=ArrivalConfirmResponse)
     def arrival_confirm(body: ArrivalConfirmRequest) -> ArrivalConfirmResponse:
-        """Persist the accepted arrival time as a PROPOSED Appointment (logged for later use)."""
+        """Persist the accepted arrival time as a PROPOSED Appointment (log which time)."""
         try:
             patient_id = UUID(body.patientId)
-            owner_id = UUID(body.ownerId)
+            owner_id = UUID(body.ownerId) if body.ownerId else None
             start = datetime.fromisoformat(body.start)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail="invalid id or datetime") from exc
 
-        appointment = confirm_arrival_slot(repo, patient_id, body.specialty, owner_id, start)
+        appointment = confirm_arrival_slot(repo, patient_id, body.specialty, start, owner_id)
         return ArrivalConfirmResponse(
             appointmentId=str(appointment.id),
-            ownerId=str(appointment.owner_id),
+            ownerId=str(appointment.owner_id) if appointment.owner_id else None,
             start=appointment.slot_start.isoformat(),
             status=appointment.status.value,
         )

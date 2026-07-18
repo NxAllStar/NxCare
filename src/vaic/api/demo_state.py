@@ -12,6 +12,7 @@ import os
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from ..agents.intake.arrival import CLOSE_HOUR, OPEN_HOUR
 from ..models import (
     Appointment,
     AppointmentStatus,
@@ -40,22 +41,26 @@ ARRIVAL_DOCTORS = (ARRIVAL_DOCTOR_A, ARRIVAL_DOCTOR_B, ARRIVAL_DOCTOR_C)
 # Fixed midnight the demo grid is anchored to, so suggestions are reproducible regardless of the
 # wall clock (mirrors agent.py's _BOOKING_REFERENCE_DATE). Production would anchor on "now" instead.
 ARRIVAL_DEMO_ANCHOR = datetime(2026, 7, 20, 0, 0, tzinfo=UTC)
-ARRIVAL_DEMO_HOURS = [8, 9, 10, 11]
 ARRIVAL_DEMO_DAYS = 3
-_ARRIVAL_DOCTOR_CAPACITY = 4
 
-# (owner, day offset, hour, how many people already booked) - hand-tuned so the least-crowded-first
-# ranking has something to sort. Doctor A's 9:00 today is deliberately at capacity (4) to exercise
-# the "skip full slot" path; Doctor B is the light option; Doctor C is middling.
-_ARRIVAL_DEMO_BOOKINGS: tuple[tuple[UUID, int, int, int], ...] = (
-    (ARRIVAL_DOCTOR_A, 0, 8, 3),
-    (ARRIVAL_DOCTOR_A, 0, 9, _ARRIVAL_DOCTOR_CAPACITY),
-    (ARRIVAL_DOCTOR_A, 0, 10, 1),
-    (ARRIVAL_DOCTOR_B, 0, 9, 1),
-    (ARRIVAL_DOCTOR_C, 0, 8, 2),
-    (ARRIVAL_DOCTOR_C, 0, 9, 2),
-    (ARRIVAL_DOCTOR_C, 1, 8, 1),
-)
+# Hospital-wide reservation load per working hour on day 0: a realistic distribution the arrival
+# agent reasons over - busy mid-morning (9:00) and mid-afternoon (15:00), quiet early morning,
+# lunch, and late evening. Day 1 is roughly half as busy; day 2 is empty (so the agent can also
+# suggest a wide-open later day). Hours span the working window [06:00, 20:00).
+_DAY0_HOUR_LOAD: dict[int, int] = {
+    6: 0, 7: 1, 8: 4, 9: 6, 10: 5, 11: 3, 12: 1,
+    13: 2, 14: 5, 15: 6, 16: 4, 17: 2, 18: 1, 19: 0,
+}
+
+
+def _reservation_load(day_offset: int, hour: int) -> int:
+    """How many reservations to seed at (day, hour): full on day 0, half on day 1, none after."""
+    base = _DAY0_HOUR_LOAD.get(hour, 0)
+    if day_offset == 0:
+        return base
+    if day_offset == 1:
+        return base // 2
+    return 0
 
 
 def build_repository() -> Repository:
@@ -106,21 +111,26 @@ def seed_arrival_demo(repo: Repository) -> None:
                 type=ResourceType.DOCTOR,
                 department_id=ARRIVAL_DEPARTMENT_ID,
                 is_available=True,
-                capacity_per_hour=_ARRIVAL_DOCTOR_CAPACITY,
+                capacity_per_hour=6,
             )
         )
 
     if already_seeded:
-        return  # appointments already placed on a previous start - do not double-book
-    for owner_id, day, hour, count in _ARRIVAL_DEMO_BOOKINGS:
-        start = ARRIVAL_DEMO_ANCHOR + timedelta(days=day, hours=hour)
-        for _ in range(count):
-            repo.save(
-                Appointment(
-                    patient_id=uuid4(),
-                    specialty="NOI_TONG_QUAT",
-                    owner_id=owner_id,
-                    slot_start=start,
-                    status=AppointmentStatus.PROPOSED,
+        return  # reservations already placed on a previous start - do not double-book
+    # Spread reservations across the working-hours window per the load pattern, round-robining the
+    # owner across the three doctors so the data looks realistic (counting is hospital-wide anyway).
+    seq = 0
+    for day in range(ARRIVAL_DEMO_DAYS):
+        for hour in range(OPEN_HOUR, CLOSE_HOUR):
+            start = ARRIVAL_DEMO_ANCHOR + timedelta(days=day, hours=hour)
+            for _ in range(_reservation_load(day, hour)):
+                repo.save(
+                    Appointment(
+                        patient_id=uuid4(),
+                        specialty="NOI_TONG_QUAT",
+                        owner_id=ARRIVAL_DOCTORS[seq % len(ARRIVAL_DOCTORS)],
+                        slot_start=start,
+                        status=AppointmentStatus.PROPOSED,
+                    )
                 )
-            )
+                seq += 1

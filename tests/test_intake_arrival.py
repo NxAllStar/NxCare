@@ -1,172 +1,176 @@
-"""Tests for the pre-arrival "best time to come" recommendation and confirmation (extends FR-02).
+"""Tests for the arrival-time grounding + agent reasoning (extends FR-02).
 
-Proves the acceptance the feature promises: rank suggested arrival times least-crowded-then-soonest
-(AC-02.1), cap at the top 3, never suggest an unavailable owner (BR-16) or a full slot (BR-04),
-return an empty list rather than error when nothing fits (AC-02.2), and persist an accepted slot as
-a PROPOSED Appointment (the "log into DB for later use" step). The forecast provider is stubbed to
-raise, so every ETA comes from the tested BASELINE fallback - no network call (a real call would be
-a defect, testing.md).
+Covers the two halves: `summarize_reservations` (the deterministic DB search that buckets
+reservations against hospital working hours) and `recommend_arrival_times` (the PocketFlow
+reason -> validate flow). No test drives a live provider - the reasoner is a fake/deterministic
+client (a real network call in a test is a defect, testing.md).
 """
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
+from uuid import uuid4
 
 from vaic.agents.intake.arrival import (
+    CLOSE_HOUR,
+    OPEN_HOUR,
+    DayLoad,
+    HourLoad,
     confirm_arrival_slot,
-    recommend_arrival_slots,
+    summarize_reservations,
 )
-from vaic.forecast import ForecastLLMError
-from vaic.models import Appointment, AppointmentStatus, Resource, ResourceType
+from vaic.agents.intake.arrival_chat import (
+    ArrivalChatError,
+    ArrivalRecommendation,
+    RuleBasedArrivalChatLLM,
+    recommend_arrival_times,
+)
+from vaic.models import Appointment, AppointmentStatus
 from vaic.state import InMemoryRepository
 
-ANCHOR = datetime(2026, 7, 20, 0, 0, tzinfo=UTC)  # a fixed midnight, for deterministic slot grids
-HOURS = [8, 9, 10]
+ANCHOR = datetime(2026, 7, 20, 0, 0, tzinfo=UTC)
 
 
-class _StubForecastLLM:
-    """Always fails, so estimate_wait falls back to the deterministic BASELINE path (BR-03)."""
-
-    def estimate_wait(self, features: dict) -> dict:
-        del features
-        raise ForecastLLMError("no forecast provider in test")
-
-
-def _doctor(repo: InMemoryRepository, *, capacity: int | None = 6, available: bool = True) -> UUID:
-    resource = repo.save(
-        Resource(
-            type=ResourceType.DOCTOR,
-            department_id=uuid4(),
-            is_available=available,
-            capacity_per_hour=capacity,
-        )
-    )
-    return resource.id
-
-
-def _appt(
-    repo: InMemoryRepository,
-    owner_id: UUID,
-    start: datetime,
-    status: AppointmentStatus = AppointmentStatus.PROPOSED,
-) -> None:
+def _reserve(repo, start, status=AppointmentStatus.PROPOSED):
     repo.save(
         Appointment(
-            patient_id=uuid4(),
-            specialty="NOI_TONG_QUAT",
-            owner_id=owner_id,
-            slot_start=start,
-            status=status,
+            patient_id=uuid4(), specialty="NOI_TONG_QUAT", slot_start=start, status=status
         )
     )
 
 
-def _recommend(repo: InMemoryRepository, owners: list[UUID], **kw):
-    return recommend_arrival_slots(
-        repo,
-        "NOI_TONG_QUAT",
-        owners,
-        ANCHOR,
-        days=kw.get("days", 1),
-        hours=kw.get("hours", HOURS),
-        llm=_StubForecastLLM(),
-        top_n=kw.get("top_n", 3),
+def _hour(day: DayLoad, hour: int) -> int:
+    return next(h.reservations for h in day.hours if h.hour == hour)
+
+
+# ---- summarize_reservations (the grounding search) ----------------------------------------------
+
+
+def test_summary_buckets_reservations_by_hour():
+    repo = InMemoryRepository()
+    _reserve(repo, ANCHOR + timedelta(hours=8))
+    _reserve(repo, ANCHOR + timedelta(hours=8))
+    _reserve(repo, ANCHOR + timedelta(hours=9))
+    _reserve(repo, ANCHOR + timedelta(days=1, hours=7))
+
+    summary = summarize_reservations(repo, ANCHOR, 2)
+
+    assert len(summary) == 2
+    assert _hour(summary[0], 8) == 2
+    assert _hour(summary[0], 9) == 1
+    assert _hour(summary[0], 10) == 0
+    assert _hour(summary[1], 7) == 1
+
+
+def test_summary_covers_only_working_hours():
+    repo = InMemoryRepository()
+
+    summary = summarize_reservations(repo, ANCHOR, 1)
+
+    hours = [h.hour for h in summary[0].hours]
+    assert hours == list(range(OPEN_HOUR, CLOSE_HOUR))  # 06:00 .. 19:00
+
+
+def test_summary_ignores_cancelled_and_unscheduled():
+    repo = InMemoryRepository()
+    _reserve(repo, ANCHOR + timedelta(hours=8), status=AppointmentStatus.CANCELLED)
+    _reserve(repo, ANCHOR + timedelta(hours=8), status=AppointmentStatus.NO_SHOW)
+    repo.save(Appointment(patient_id=uuid4(), specialty="X", slot_start=None))  # no time set
+
+    summary = summarize_reservations(repo, ANCHOR, 1)
+
+    assert _hour(summary[0], 8) == 0
+
+
+# ---- recommend_arrival_times (the reasoning flow) -----------------------------------------------
+
+
+def _summary_fixture() -> list[DayLoad]:
+    return [
+        DayLoad(
+            day=date(2026, 7, 20),
+            weekday="Monday",
+            hours=(HourLoad(6, 0), HourLoad(7, 3), HourLoad(8, 5), HourLoad(9, 1)),
+        )
+    ]
+
+
+class _FakeArrivalLLM:
+    def __init__(self, payload: dict[str, Any]) -> None:
+        self._payload = payload
+
+    def reply(self, message: str, context: dict[str, Any]) -> dict[str, Any]:
+        return self._payload
+
+
+class _FailingArrivalLLM:
+    def reply(self, message: str, context: dict[str, Any]) -> dict[str, Any]:
+        raise ArrivalChatError("provider down")
+
+
+def test_rule_based_reasoner_picks_least_crowded_first():
+    result = recommend_arrival_times(
+        "when should I come?", _summary_fixture(), RuleBasedArrivalChatLLM()
     )
 
+    assert isinstance(result, ArrivalRecommendation)
+    counts = [b.reservation_count for b in result.recommendations]
+    assert counts == sorted(counts)
+    assert result.recommendations[0].reservation_count == 0
+    assert result.recommendations[0].start_hour == 6
 
-def test_returns_at_most_top_n():
+
+def test_valid_llm_output_is_used():
+    payload = {
+        "message": "Come between 06:00 and 07:00 on Monday.",
+        "recommendations": [
+            {"date": "2026-07-20", "start_hour": 6, "end_hour": 7, "reservation_count": 0,
+             "reason": "empty"}
+        ],
+    }
+    result = recommend_arrival_times("hi", _summary_fixture(), _FakeArrivalLLM(payload))
+
+    assert result.message == "Come between 06:00 and 07:00 on Monday."
+    assert result.recommendations[0].start_hour == 6
+
+
+def test_failing_provider_degrades_to_deterministic():
+    result = recommend_arrival_times("hi", _summary_fixture(), _FailingArrivalLLM())
+
+    assert isinstance(result, ArrivalRecommendation)
+    assert result.recommendations[0].reservation_count == 0  # deterministic fallback still answers
+
+
+def test_offschema_output_degrades_to_deterministic():
+    result = recommend_arrival_times("hi", _summary_fixture(), _FakeArrivalLLM({"unexpected": 1}))
+
+    assert isinstance(result, ArrivalRecommendation)
+    assert result.recommendations[0].start_hour == 6
+
+
+def test_llm_block_outside_working_hours_is_rejected():
+    # start_hour 25 violates the schema bound -> validation fails -> deterministic fallback.
+    payload = {"message": "x", "recommendations": [
+        {"date": "2026-07-20", "start_hour": 25, "end_hour": 26, "reservation_count": 0}
+    ]}
+    result = recommend_arrival_times("hi", _summary_fixture(), _FakeArrivalLLM(payload))
+
+    assert result.recommendations[0].start_hour == 6  # fell back, did not trust the bad block
+
+
+# ---- confirm_arrival_slot (log which time) ------------------------------------------------------
+
+
+def test_confirm_persists_proposed_appointment_without_owner():
     repo = InMemoryRepository()
-    owners = [_doctor(repo), _doctor(repo)]  # 2 owners x 3 hours x 1 day = 6 candidate slots
-
-    result = _recommend(repo, owners, top_n=3)
-
-    assert len(result) == 3
-
-
-def test_least_crowded_slot_ranked_first():
-    repo = InMemoryRepository()
-    owner = _doctor(repo)
-    # 8:00 already has three people; 9:00 and 10:00 are empty.
-    for _ in range(3):
-        _appt(repo, owner, ANCHOR + timedelta(hours=8))
-
-    result = _recommend(repo, [owner])
-
-    assert result[0].participants == 0
-    assert result[0].start == ANCHOR + timedelta(hours=9)  # emptiest, and the soonest empty one
-    assert result[-1].start == ANCHOR + timedelta(hours=8)  # the crowded slot sinks to the bottom
-
-
-def test_ties_break_by_soonest():
-    repo = InMemoryRepository()
-    owner = _doctor(repo)  # every slot empty -> all tie on participants
-
-    result = _recommend(repo, [owner])
-
-    starts = [slot.start for slot in result]
-    assert starts == sorted(starts)  # equal crowding -> ascending by time (nearest first)
-
-
-def test_skips_unavailable_owner():
-    repo = InMemoryRepository()
-    up = _doctor(repo, available=True)
-    down = _doctor(repo, available=False)
-
-    result = _recommend(repo, [up, down], top_n=10)
-
-    assert result  # the available owner still yields slots
-    assert all(slot.owner_id == up for slot in result)
-
-
-def test_skips_full_slot():
-    repo = InMemoryRepository()
-    owner = _doctor(repo, capacity=2)
-    for _ in range(2):  # 8:00 is now at capacity
-        _appt(repo, owner, ANCHOR + timedelta(hours=8))
-
-    result = _recommend(repo, [owner], hours=[8, 9])
-
-    assert all(slot.start != ANCHOR + timedelta(hours=8) for slot in result)
-
-
-def test_cancelled_appointment_does_not_count_as_participant():
-    repo = InMemoryRepository()
-    owner = _doctor(repo)
-    _appt(repo, owner, ANCHOR + timedelta(hours=8), status=AppointmentStatus.CANCELLED)
-
-    result = _recommend(repo, [owner], hours=[8])
-
-    assert result[0].participants == 0  # a cancelled appointment frees the slot
-
-
-def test_empty_when_no_candidates():
-    repo = InMemoryRepository()
-
-    assert _recommend(repo, []) == []
-
-
-def test_confirm_persists_proposed_appointment():
-    repo = InMemoryRepository()
-    owner = _doctor(repo)
     patient = uuid4()
-    start = ANCHOR + timedelta(hours=9)
+    start = ANCHOR + timedelta(hours=6)
 
-    appointment = confirm_arrival_slot(repo, patient, "NOI_TONG_QUAT", owner, start)
+    appointment = confirm_arrival_slot(repo, patient, "NOI_TONG_QUAT", start)
 
-    assert appointment.owner_id == owner
-    assert appointment.slot_start == start
     assert appointment.status == AppointmentStatus.PROPOSED
+    assert appointment.owner_id is None  # time-block arrival: doctor assigned at the desk
+    assert appointment.slot_start == start
     stored = repo.get(Appointment, appointment.id)
     assert stored is not None and stored.patient_id == patient
-
-
-def test_confirmed_slot_then_counts_as_a_participant():
-    repo = InMemoryRepository()
-    owner = _doctor(repo)
-    start = ANCHOR + timedelta(hours=9)
-
-    confirm_arrival_slot(repo, uuid4(), "NOI_TONG_QUAT", owner, start)
-    result = _recommend(repo, [owner], hours=[9])
-
-    assert result[0].participants == 1  # the just-confirmed arrival is now on record for later use

@@ -1,120 +1,104 @@
-"""Pre-arrival "best time to come" recommendation and confirmation (extends FR-02).
+"""Grounding + persistence for the arrival-time agent (extends FR-02).
 
-The patient chats before coming to the hospital; the agent suggests when to arrive to wait the
-least. Two pure-ish operations:
+The agent that recommends *when to come* reasons over real data, not guesses: this module does the
+deterministic half - it searches the DB for every reservation and buckets it against hospital
+working hours - and the LLM (see `arrival_chat.py`) reasons over that retrieved summary. Keeping the
+retrieval in code is the grounding contract (NFR-SEC-20, mirrors `forecast/`): the model never
+invents a reservation count, it only interprets the ones we hand it.
 
-- `recommend_arrival_slots` - a read-only query. Over a window of the next `days` x `hours`, it
-  counts how many appointments are already scheduled with each candidate owner at each slot (the
-  "participants"), ranks least-crowded-then-soonest, and returns the top N. This is the concrete
-  form of FR-02's least-crowded goal, and it counts booked `Appointment`s directly - which only
-  became possible once ADR-003 gave `Appointment` an `owner_id` (closing the B1 data-model gap that
-  `recommend_slots`/`_book_appointment` both flag). Every ETA still comes from the forecast tool's
-  `estimate_wait` (BR-03); this module never invents a wait number, it only counts and ranks.
-
-- `confirm_arrival_slot` - the one write. When the patient accepts a suggestion, it persists an
-  `Appointment` with the chosen `slot_start` (a recommended arrival window per ADR-003, not a hard
-  reservation) so the choice is on record for later use. It does NOT book the consult (`BOOKED`
-  needs staff confirmation, BR-02): the appointment is created `PROPOSED`.
+A "reservation" is an `Appointment` with a `slot_start` (no new entity needed - see the ADR-003 data
+model). `confirm_arrival_slot` logs the patient's accepted time back as a `PROPOSED` appointment;
+`owner_id` is optional because a time-block arrival is not yet bound to a specific doctor (the desk
+assigns one on arrival, ADR-003 call-time binding).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
-from ...forecast import ForecastLLM, estimate_wait
-from ...models import Appointment, AppointmentStatus, Resource
+from ...models import Appointment, AppointmentStatus
 from ...state import Repository
 
-# An appointment in one of these states no longer occupies its slot, so it is not a "participant"
-# the arriving patient would wait behind.
+# Hospital working hours [OPEN_HOUR, CLOSE_HOUR): open 06:00, last hour-block starts 19:00, closes
+# 20:00 (8pm). A single config constant today; promote to an OperatingHours table only if hours ever
+# vary by day/department/holiday (data-model note).
+OPEN_HOUR = 6
+CLOSE_HOUR = 20
+
+# An appointment in one of these states no longer holds its slot, so it is not counted.
 _INACTIVE_STATUSES = (AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW)
 
 
 @dataclass(frozen=True)
-class ArrivalSlot:
-    """A suggested arrival time for an owner: how crowded it already is, plus a grounded ETA."""
+class HourLoad:
+    """How many reservations already fall inside one working hour (e.g. 08:00-09:00)."""
 
-    owner_id: UUID
-    start: datetime
-    participants: int  # appointments already scheduled with this owner at this slot
-    eta_minutes: float  # from the forecast tool only (BR-03)
-    eta_source: str
+    hour: int
+    reservations: int
 
 
-def _participants_at(repo: Repository, owner_id: UUID, start: datetime) -> int:
-    """How many active appointments are already scheduled with `owner_id` at exactly `start`."""
-    return sum(
-        1
-        for appointment in repo.list(Appointment, owner_id=owner_id)
-        if appointment.slot_start == start and appointment.status not in _INACTIVE_STATUSES
-    )
+@dataclass(frozen=True)
+class DayLoad:
+    """One upcoming day's reservation load across every working hour."""
+
+    day: date
+    weekday: str
+    hours: tuple[HourLoad, ...]
 
 
-def recommend_arrival_slots(
+def summarize_reservations(
     repo: Repository,
-    specialty: str,
-    candidate_owner_ids: list[UUID],
     start_from: datetime,
-    *,
     days: int,
-    hours: list[int],
-    llm: ForecastLLM,
-    top_n: int = 3,
-) -> list[ArrivalSlot]:
-    """Rank candidate arrival slots least-crowded-then-soonest and return the top `top_n` (AC-02.1).
+    *,
+    open_hour: int = OPEN_HOUR,
+    close_hour: int = CLOSE_HOUR,
+) -> list[DayLoad]:
+    """Search every reservation and bucket it per (day, working hour) - the agent's grounding.
 
-    `specialty` is carried for traceability only - the caller has already mapped specialty ->
-    `candidate_owner_ids`, exactly as `recommend_slots` documents. Slots are generated on a grid of
-    the next `days` calendar days (from the midnight of `start_from`) x each hour in `hours`.
-
-    A candidate owner that is unavailable is skipped (BR-16); a slot already at/over the owner's
-    hourly capacity is skipped as full (BR-04) so a suggestion is always actually takeable. Ordering
-    is `(participants, start)`: fewest people already waiting first, the soonest such slot as the
-    tiebreaker. Returns `[]` when nothing qualifies (AC-02.2) - a normal empty result, not an error.
+    Counts each active `Appointment` whose `slot_start` falls inside the hour, hospital-wide, for
+    `days` days starting from the midnight of `start_from`, across `[open_hour, close_hour)`. A
+    reservation outside working hours (there should be none) is simply never bucketed. This is a
+    read-only query - it invents nothing and never writes.
     """
-    del specialty  # reserved for the caller-side specialty -> owner mapping; unused here
     midnight = start_from.replace(hour=0, minute=0, second=0, microsecond=0)
-    slots: list[ArrivalSlot] = []
-    for owner_id in candidate_owner_ids:
-        resource = repo.get(Resource, owner_id)
-        if resource is None or not resource.is_available:
-            continue
-        for day in range(days):
-            for hour in hours:
-                start = midnight + timedelta(days=day, hours=hour)
-                participants = _participants_at(repo, owner_id, start)
-                capacity = resource.capacity_per_hour
-                if capacity is not None and participants >= capacity:
-                    continue  # slot is full - never suggest a time the patient cannot take
-                forecast = estimate_wait(repo, owner_id, hour, llm)  # BR-03: only source of an ETA
-                slots.append(
-                    ArrivalSlot(
-                        owner_id=owner_id,
-                        start=start,
-                        participants=participants,
-                        eta_minutes=forecast.value,
-                        eta_source=forecast.source,
-                    )
-                )
+    reservations = [
+        appointment
+        for appointment in repo.list(Appointment)
+        if appointment.slot_start is not None and appointment.status not in _INACTIVE_STATUSES
+    ]
 
-    slots.sort(key=lambda slot: (slot.participants, slot.start))
-    return slots[:top_n]
+    summary: list[DayLoad] = []
+    for day_offset in range(days):
+        day_start = midnight + timedelta(days=day_offset)
+        hours: list[HourLoad] = []
+        for hour in range(open_hour, close_hour):
+            block_start = day_start + timedelta(hours=hour)
+            block_end = block_start + timedelta(hours=1)
+            count = sum(
+                1 for r in reservations if block_start <= r.slot_start < block_end  # type: ignore[operator]
+            )
+            hours.append(HourLoad(hour=hour, reservations=count))
+        summary.append(
+            DayLoad(day=day_start.date(), weekday=day_start.strftime("%A"), hours=tuple(hours))
+        )
+    return summary
 
 
 def confirm_arrival_slot(
     repo: Repository,
     patient_id: UUID,
     specialty: str,
-    owner_id: UUID,
     start: datetime,
+    owner_id: UUID | None = None,
 ) -> Appointment:
-    """Persist the patient's accepted arrival time as a `PROPOSED` `Appointment` (logged for later).
+    """Persist the patient's accepted arrival time as a `PROPOSED` `Appointment` (log for later).
 
-    This is the "log into DB for later use" step: the chosen `slot_start` and `owner_id` are stored
-    so the visit is on record. It is deliberately NOT a booking - `Appointment` starts `PROPOSED`;
-    moving to `BOOKED` needs staff confirmation (BR-02), which is out of this pre-arrival flow.
+    This is the "log which time" step. It is deliberately NOT a booking: `Appointment` starts
+    `PROPOSED`; the move to `BOOKED` needs staff confirmation (BR-02). `owner_id` is optional - a
+    time-block arrival has no assigned doctor yet; the desk binds one at arrival (ADR-003).
     """
     appointment = Appointment(
         patient_id=patient_id,
