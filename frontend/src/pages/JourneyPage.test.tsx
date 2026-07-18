@@ -16,11 +16,37 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '@/auth/AuthContext';
 import { I18nProvider } from '@/i18n';
 import * as patientApi from '@/lib/api/patient';
+import * as careplanApi from '@/lib/api/careplan';
+import { DEMO_CARE_PLANS, DEMO_PAYMENTS, DEMO_TASKS } from '@/lib/api/fixtures';
 import { JourneyPage } from './JourneyPage';
+
+// The care plan now comes from the real backend client (TASK-038), not the mock patient layer.
+// Mock that client and feed it the same fixture data the assertions below already expect, so the
+// screen renders identically - the point of the task is where the data comes from, not its shape.
+vi.mock('@/lib/api/careplan');
+
+function activeCarePlanView(): careplanApi.CarePlanView {
+  const carePlan = DEMO_CARE_PLANS[0];
+  const tasks = DEMO_TASKS.filter((task) => task.carePlanId === carePlan.id).sort(
+    (a, b) => a.sequenceIndex - b.sequenceIndex,
+  );
+  const payments = DEMO_PAYMENTS.filter((p) => tasks.some((task) => task.id === p.subjectId));
+  return { carePlan, tasks, payments };
+}
+
+beforeEach(() => {
+  vi.mocked(careplanApi.resolvePatient).mockResolvedValue({
+    patientId: '00000000-0000-0000-0000-0000000000a1',
+    appointmentId: '00000000-0000-0000-0000-0000000000b1',
+    patientCode: 'BN-000123',
+  });
+  vi.mocked(careplanApi.openCarePlanStream).mockReturnValue(() => {});
+  vi.mocked(careplanApi.fetchActiveCarePlan).mockResolvedValue(activeCarePlanView());
+});
 
 function seedSession(patientId: 'patient-0001' | 'patient-0002' = 'patient-0001') {
   const patients = {
@@ -71,6 +97,7 @@ describe('JourneyPage (SCR-02 Journey timeline)', () => {
 
   it('shows the empty state for a patient with no active care plan', async () => {
     seedSession('patient-0002');
+    vi.mocked(careplanApi.fetchActiveCarePlan).mockResolvedValue(null); // backend 404 -> empty
     renderJourneyPage();
     expect(await screen.findByText('Chưa có lộ trình - vui lòng hoàn tất khám chẩn đoán.')).toBeInTheDocument();
   });
@@ -132,7 +159,7 @@ describe('JourneyPage (SCR-02 Journey timeline)', () => {
 
   it('shows the error state when a fetch fails', async () => {
     seedSession('patient-0001');
-    vi.spyOn(patientApi, 'getActiveCarePlan').mockRejectedValueOnce(new Error('down'));
+    vi.mocked(careplanApi.fetchActiveCarePlan).mockRejectedValueOnce(new Error('down'));
     renderJourneyPage();
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });

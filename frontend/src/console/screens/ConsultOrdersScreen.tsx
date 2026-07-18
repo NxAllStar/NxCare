@@ -3,6 +3,12 @@ import { useI18n } from '@/i18n';
 import { Avatar, Button, Card, StatusChip, PatientCodeQr, useToast, Toast } from '@/components/primitives';
 import { clinicalStore, type ClinicalPatient } from '../dashboard/clinicalStore';
 import { CheckIcon, PlusIcon, XIcon, QrIcon } from '@/components/icons';
+import * as careplanApi from '@/lib/api/careplan';
+
+// Fixed synthetic demo doctor id for the `diagnosed_by` field (no server-side authz here yet -
+// FR-18 binds this to a real session in a separate task; matches the trusted-actor posture of
+// `/api/careplan/generate`). Never a real person.
+const DEMO_DOCTOR_ID = '11111111-1111-1111-1111-111111111111';
 
 const SERVICE_CATALOG = [
   'Xét nghiệm máu',
@@ -63,18 +69,40 @@ export function ConsultOrdersScreen() {
     setOrderedServices(orderedServices.filter((s) => s !== service));
   };
 
-  const handleSignOrders = () => {
-    if (!selectedPatientId) return;
+  const handleSignOrders = async () => {
+    if (!selectedPatientId || !selectedPatient) return;
     if (!diagnosisInput.trim()) {
       showToast('Chẩn đoán lâm sàng không được để trống');
       return;
     }
 
     const diagnoses = diagnosisInput.split(',').map((d) => d.trim()).filter(Boolean);
+
+    // Local console UX first (unchanged): reflect the sign-off in this screen's own store.
     clinicalStore.signAndFinaliseOrders(selectedPatientId, diagnoses, orderedServices);
     setLocalSigned(true);
 
-    showToast(`Đã ký và chốt chỉ định cho ${selectedPatient?.name}`);
+    // Then push the order to the real backend so the patient's Journey screen updates live
+    // (TASK-038). Resolve the patient's canonical id by patient_code - the same id the patient app
+    // reads under - then generate the care plan. A backend failure does not undo the local sign-off;
+    // it just tells the doctor the live push did not land.
+    if (orderedServices.length === 0) {
+      showToast(`Đã ký chẩn đoán cho ${selectedPatient.name} (chưa có chỉ định để gửi)`);
+      return;
+    }
+    try {
+      const resolved = await careplanApi.resolvePatient(selectedPatient.patientCode);
+      await careplanApi.generateCarePlan({
+        patientId: resolved.patientId,
+        appointmentId: resolved.appointmentId,
+        diagnosedBy: DEMO_DOCTOR_ID,
+        conditions: diagnoses,
+        serviceTypeNames: orderedServices,
+      });
+      showToast(`Đã ký và gửi chỉ định cho ${selectedPatient.name}`);
+    } catch {
+      showToast(`Đã ký cục bộ, nhưng gửi chỉ định lên hệ thống thất bại cho ${selectedPatient.name}`);
+    }
   };
 
   const handleSimulateScan = (e: React.FormEvent) => {
@@ -305,7 +333,7 @@ export function ConsultOrdersScreen() {
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={handleSignOrders}
+                    onClick={() => void handleSignOrders()}
                     className="w-full text-sm font-bold py-2.5 shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25"
                   >
                     <CheckIcon className="mr-2 h-4 w-4" />

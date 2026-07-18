@@ -57,6 +57,34 @@ export const DEMO_PATIENTS: Patient[] = [
     priorityLevel: PriorityLevel.ROUTINE,
     createdAt: '2026-02-10T02:00:00.000Z',
   },
+  // Cross-surface demo personas (TASK-038): these patient_codes match the staff console's seeded
+  // patients (`console/dashboard/clinicalStore.ts`) and the backend seed (`api/demo_state.py`), so
+  // logging in as one here resolves to the SAME backend patient the doctor signs orders for - which
+  // is what lets a console order appear on this patient's Journey screen live.
+  {
+    id: 'patient-0011',
+    fullName: 'Nguyen Thi Lan',
+    phone: null,
+    patientCode: 'BN-941207',
+    priorityLevel: PriorityLevel.ROUTINE,
+    createdAt: '2026-03-01T02:00:00.000Z',
+  },
+  {
+    id: 'patient-0012',
+    fullName: 'Le Hoang Nam',
+    phone: null,
+    patientCode: 'BN-880214',
+    priorityLevel: PriorityLevel.ROUTINE,
+    createdAt: '2026-03-02T02:00:00.000Z',
+  },
+  {
+    id: 'patient-0013',
+    fullName: 'Tran Minh Quan',
+    phone: null,
+    patientCode: 'BN-921105',
+    priorityLevel: PriorityLevel.ROUTINE,
+    createdAt: '2026-03-03T02:00:00.000Z',
+  },
 ];
 
 export const DEMO_INTAKE_SESSIONS: IntakeSession[] = [

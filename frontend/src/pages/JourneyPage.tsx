@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { useI18n, type DictKey } from '@/i18n';
 import { useAuth } from '@/auth/AuthContext';
 import * as patientApi from '@/lib/api/patient';
+import * as careplanApi from '@/lib/api/careplan';
 import type { Appointment, CarePlan, Notification, Payment, Task } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +33,7 @@ export function JourneyPage() {
   const { t } = useI18n();
   const { session } = useAuth();
   const patientId = session?.patient.id;
+  const patientCode = session?.patient.patientCode;
 
   const [carePlan, setCarePlan] = useState<CarePlan | null | undefined>(undefined);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -43,14 +45,33 @@ export function JourneyPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!patientId) return;
+    if (!patientId || !patientCode) return;
     let cancelled = false;
+    let closeStream = () => {};
     setLoadError(false);
+
+    // The care plan comes from the real backend (TASK-038): resolve the patient's canonical UUID,
+    // read the active plan, then keep it live over SSE - a doctor's order on the console pushes a
+    // `careplan.updated` event and this refetches. Notifications/appointments stay on the mock layer
+    // (out of this task's scope). A backend miss (404) maps to the same empty state as before.
+    async function loadCarePlan(patientUuid: string) {
+      const view = await careplanApi.fetchActiveCarePlan(patientUuid);
+      if (cancelled) return;
+      if (!view) {
+        setCarePlan(null);
+        setTasks([]);
+        setPayments([]);
+        return;
+      }
+      setCarePlan(view.carePlan);
+      setTasks(view.tasks);
+      setPayments(view.payments);
+    }
 
     (async () => {
       try {
-        const [plan, notifs, appointments] = await Promise.all([
-          patientApi.getActiveCarePlan(patientId),
+        const [resolved, notifs, appointments] = await Promise.all([
+          careplanApi.resolvePatient(patientCode),
           patientApi.listNotifications(patientId),
           patientApi.listAppointments(patientId),
         ]);
@@ -58,19 +79,11 @@ export function JourneyPage() {
         setNotifications(notifs);
         setAppointment(appointments[0] ?? null);
 
-        if (!plan) {
-          setCarePlan(null);
-          setTasks([]);
-          setPayments([]);
-          return;
-        }
-
-        const planTasks = await patientApi.listTasksForCarePlan(plan.id);
-        const taskPayments = await patientApi.listPaymentsForTasks(planTasks.map((task) => task.id));
+        await loadCarePlan(resolved.patientId);
         if (cancelled) return;
-        setCarePlan(plan);
-        setTasks(planTasks);
-        setPayments(taskPayments);
+        closeStream = careplanApi.openCarePlanStream(resolved.patientId, () => {
+          void loadCarePlan(resolved.patientId);
+        });
       } catch {
         if (!cancelled) setLoadError(true);
       }
@@ -78,8 +91,9 @@ export function JourneyPage() {
 
     return () => {
       cancelled = true;
+      closeStream();
     };
-  }, [patientId]);
+  }, [patientId, patientCode]);
 
   async function handleReschedule() {
     if (!appointment) return;
