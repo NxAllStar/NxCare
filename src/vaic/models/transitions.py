@@ -11,6 +11,7 @@ from .enums import (
     CarePlanStatus,
     DisruptionStatus,
     ExecutionStatus,
+    QueueTicketStatus,
 )
 
 
@@ -38,6 +39,21 @@ APPOINTMENT_TRANSITIONS: dict[AppointmentStatus, set[AppointmentStatus]] = {
     AppointmentStatus.DONE: set(),
     AppointmentStatus.NO_SHOW: set(),
     AppointmentStatus.CANCELLED: set(),
+}
+
+QUEUE_TICKET_TRANSITIONS: dict[QueueTicketStatus, set[QueueTicketStatus]] = {
+    # ADR-003. WAITING -> CALLED when a free room calls the next number; CALLED -> IN_SERVICE
+    # when the patient presents (FR-17 scan). SKIPPED is a called-but-absent patient, who may be
+    # re-called (back to WAITING) once they turn up.
+    QueueTicketStatus.WAITING: {QueueTicketStatus.CALLED, QueueTicketStatus.SKIPPED},
+    QueueTicketStatus.CALLED: {
+        QueueTicketStatus.IN_SERVICE,
+        QueueTicketStatus.SKIPPED,
+        QueueTicketStatus.WAITING,
+    },
+    QueueTicketStatus.IN_SERVICE: {QueueTicketStatus.DONE},
+    QueueTicketStatus.SKIPPED: {QueueTicketStatus.WAITING},
+    QueueTicketStatus.DONE: set(),
 }
 
 CAREPLAN_TRANSITIONS: dict[CarePlanStatus, set[CarePlanStatus]] = {

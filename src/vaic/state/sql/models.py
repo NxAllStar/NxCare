@@ -69,6 +69,10 @@ DisruptionStatusEnum = _enum(
 )
 NotificationChannelEnum = _enum("notification_channel_enum", "IN_APP", "SCREEN", "SMS")
 PaymentSubjectTypeEnum = _enum("payment_subject_type_enum", "TASK", "APPOINTMENT")
+QueueTicketStatusEnum = _enum(
+    "queue_ticket_status_enum", "WAITING", "CALLED", "IN_SERVICE", "DONE", "SKIPPED"
+)
+QueueSubjectTypeEnum = _enum("queue_subject_type_enum", "CONSULT", "SERVICE")
 
 
 def _uuid_pk() -> Column:
@@ -101,6 +105,14 @@ class ResourceRow(Base):
     department_id = Column(UUID(as_uuid=True), nullable=False)
     is_available = Column(Boolean, nullable=False, server_default="true")
     capacity_per_hour = Column(Integer)
+
+
+class DepartmentRow(Base):
+    __tablename__ = "departments"
+
+    id = _uuid_pk()
+    code = Column(Text, nullable=False, unique=True)  # ticket-label prefix, e.g. "DepB"
+    display_label = Column(Text, nullable=False)
 
 
 class ServiceTypeRow(Base):
@@ -149,6 +161,7 @@ class AppointmentRow(Base):
     specialty = Column(Text, nullable=False)
     status = Column(AppointmentStatusEnum, nullable=False, server_default="PROPOSED")
     payment_status = Column(PaymentStatusEnum, nullable=False, server_default="UNPAID")
+    owner_id = _uuid_fk("resources", ondelete="RESTRICT")  # nullable, ADR-003
     slot_start = Column(TIMESTAMP(timezone=True))
     created_at = Column(TIMESTAMP(timezone=True), nullable=False)
 
@@ -256,3 +269,21 @@ class ScanEventRow(Base):
     task_id = _uuid_fk("tasks", ondelete="RESTRICT")
     scanned_by = _uuid_fk("resources", ondelete="RESTRICT")
     scanned_at = Column(TIMESTAMP(timezone=True), nullable=False)
+
+
+class QueueTicketRow(Base):
+    __tablename__ = "queue_tickets"
+
+    id = _uuid_pk()
+    patient_id = _uuid_fk("patients", ondelete="RESTRICT")  # denormalized, ADR-003 / TASK-016
+    department_id = _uuid_fk("departments", ondelete="RESTRICT")
+    capability = Column(Text)  # nullable: null = one shared queue for the whole department
+    priority_band = Column(PriorityLevelEnum, nullable=False, server_default="ROUTINE")
+    subject_type = Column(QueueSubjectTypeEnum, nullable=False)
+    subject_id = Column(UUID(as_uuid=True), nullable=False)  # polymorphic, like payments.subject_id
+    ticket_seq = Column(Integer, nullable=False)
+    ticket_label = Column(Text, nullable=False)
+    status = Column(QueueTicketStatusEnum, nullable=False, server_default="WAITING")
+    called_by_owner_id = _uuid_fk("resources", ondelete="RESTRICT")  # nullable until CALLED
+    issued_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    called_at = Column(TIMESTAMP(timezone=True))
