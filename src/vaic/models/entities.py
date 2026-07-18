@@ -63,6 +63,7 @@ class Appointment(_Base):
 
 
 class Diagnosis(_Base):
+    patient_id: UUID  # denormalized from Appointment so Own-scope resolves directly (TASK-016)
     appointment_id: UUID
     conditions: list[str] = Field(default_factory=list)  # Sensitive PII
     diagnosed_by: UUID  # the doctor
@@ -70,6 +71,7 @@ class Diagnosis(_Base):
 
 
 class ServiceOrder(_Base):
+    patient_id: UUID  # denormalized from Diagnosis so Own-scope resolves directly (TASK-016)
     diagnosis_id: UUID
     service_type_id: UUID
     ordered_by: UUID  # only a doctor may create this (BR-05) - enforced at the write boundary
@@ -118,6 +120,7 @@ class Task(_Base):
 
 
 class Slot(_Base):
+    patient_id: UUID  # denormalized from Task/CarePlan so Own-scope resolves directly (TASK-016)
     task_id: UUID
     owner_id: UUID
     start: datetime
@@ -127,6 +130,7 @@ class Slot(_Base):
 class Payment(_Base):
     """A proceed-gate flag, NOT money processing (AS-02). `amount` is display-only."""
 
+    patient_id: UUID  # denormalized since subject_id is polymorphic (TASK-016)
     subject_type: PaymentSubjectType
     subject_id: UUID
     amount: Decimal | None = None
@@ -163,6 +167,9 @@ class AuditLogEntry(_Base):
     actor: str
     action: str
     target_id: UUID | None = None
+    # Nullable (TASK-016): not every entry is about a patient (e.g. a blocked unknown-tool call
+    # audited before any patient context is resolved). When set, it resolves Own-scope directly.
+    patient_id: UUID | None = None
     reasoning: str = ""
     created_at: datetime = Field(default_factory=_now)
 
