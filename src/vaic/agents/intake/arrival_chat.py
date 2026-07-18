@@ -1,24 +1,38 @@
-"""Arrival-time reasoning: the agent that tells a patient when to come (extends FR-02).
+"""The patient assistant: one chat that answers normally, and suggests arrival times on intent.
 
-`recommend_arrival_times` runs the retrieve -> reason -> validate flow on PocketFlow behind
-agent-core (ADR-001), exactly like the Journey chat: the reservation summary retrieved by
-`arrival.summarize_reservations` is the CONTEXT, the patient message is untrusted DATA, and the
-reasoner returns a schema-validated `ArrivalRecommendation`. A real LLM answers when a provider is
-configured (`arrival_llm_client.build_arrival_chat_llm`); the deterministic reasoner here is only
-the offline/failure fallback so the feature degrades instead of erroring (ai-governance.md).
+A single agent turn. The reasoner is given the patient message (untrusted DATA) plus a reservation
+summary (CONTEXT) and decides the intent itself:
 
-Model output is never trusted: it reaches the caller only through `ArrivalRecommendation`
-validation (NFR-SEC-12), and the schema bounds hours so an out-of-range block is rejected.
+- `SCHEDULE` - the patient wants to know when to come / avoid the crowd -> it recommends the
+  least-crowded time blocks, grounded in the retrieved reservation counts (never invented).
+- `CHAT` - anything else -> it just replies helpfully, with no recommendations.
+
+`respond_to_chat` runs the retrieve -> reason -> validate flow on PocketFlow behind agent-core
+(ADR-001), exactly like the Journey chat. A real LLM answers when a provider is configured
+(`arrival_llm_client.build_arrival_chat_llm`); the deterministic reasoner here is only the
+offline/failure fallback. Model output is never trusted - it reaches the caller only through
+`AssistantReply` validation (NFR-SEC-12), and the schema bounds hours so an out-of-range block is
+rejected.
 """
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from ..core import run_reason_flow
 from .arrival import CLOSE_HOUR, OPEN_HOUR, DayLoad
+
+AssistantIntent = Literal["SCHEDULE", "CHAT"]
+
+# Deterministic-fallback-only hints that a message is about *when* to come. The real LLM classifies
+# intent on its own; this list is used solely by the offline reasoner below.
+_SCHEDULE_MARKERS = (
+    "when", "what time", "which time", "time to come", "come in", "arrive", "schedule",
+    "appointment", "book", "gio", "khi nao", "luc nao", "may gio", "den kham", "di kham",
+    "di benh vien", "dat lich", "hen kham", "lich kham",
+)
 
 
 class ArrivalBlock(BaseModel):
@@ -39,17 +53,18 @@ class ArrivalBlock(BaseModel):
         return self
 
 
-class ArrivalRecommendation(BaseModel):
-    """The validated shape the reasoner must return: patient-facing text plus structured blocks."""
+class AssistantReply(BaseModel):
+    """The validated shape the reasoner must return: intent, a message, and optional time blocks."""
 
     model_config = ConfigDict(extra="forbid")
 
+    intent: AssistantIntent = "CHAT"
     message: str
-    recommendations: list[ArrivalBlock]
+    recommendations: list[ArrivalBlock] = Field(default_factory=list)
 
 
 class ArrivalChatLLM(Protocol):
-    """An arrival-reasoning client. Returns a raw dict matching `ArrivalRecommendation`."""
+    """An assistant reasoning client. Returns a raw dict matching `AssistantReply`."""
 
     def reply(self, message: str, context: dict[str, Any]) -> dict[str, Any]:
         """Reason over the (untrusted) `message` and reservation `context`; return a raw dict."""
@@ -79,108 +94,86 @@ def build_context(
     }
 
 
-def _deterministic(
-    summary: list[DayLoad], *, open_hour: int, close_hour: int, top_n: int = 3
-) -> ArrivalRecommendation:
-    """Offline/fallback reasoner: pick the `top_n` least-crowded working hours as 1-hour blocks."""
+def _least_crowded_blocks(context: dict[str, Any], top_n: int = 3) -> list[dict[str, Any]]:
+    """The `top_n` least-crowded working hours as 1-hour block dicts (deterministic)."""
     cells = [
-        (day.day.isoformat(), hour.hour, hour.reservations)
-        for day in summary
-        for hour in day.hours
+        (day["date"], hour["hour"], hour["reservations"])
+        for day in context.get("days", [])
+        for hour in day["hours"]
     ]
     cells.sort(key=lambda cell: (cell[2], cell[0], cell[1]))  # fewest reservations, then soonest
-    chosen = cells[:top_n]
-
-    blocks = [
-        ArrivalBlock(
-            date=iso_date,
-            start_hour=hour,
-            end_hour=hour + 1,
-            reservation_count=count,
-            reason=f"{count} reservation(s) in this hour",
-        )
-        for iso_date, hour, count in chosen
+    return [
+        {
+            "date": iso_date,
+            "start_hour": hour,
+            "end_hour": hour + 1,
+            "reservation_count": count,
+            "reason": f"{count} reservation(s) in this hour",
+        }
+        for iso_date, hour, count in cells[:top_n]
     ]
-    if not blocks:
-        message = "There are no working hours to recommend right now."
-    else:
-        spans = ", ".join(f"{b.date} {b.start_hour:02d}:00-{b.end_hour:02d}:00" for b in blocks)
-        message = (
-            f"The hospital is open {open_hour:02d}:00-{close_hour:02d}:00. The quietest times to "
-            f"come are: {spans}."
+
+
+def _deterministic_reply(message: str, context: dict[str, Any]) -> dict[str, Any]:
+    """Offline/fallback reasoner: classify intent by keyword, then answer accordingly."""
+    text = message.lower()
+    if not any(marker in text for marker in _SCHEDULE_MARKERS):
+        return {
+            "intent": "CHAT",
+            "message": (
+                "I can help you pick a time to come in with the shortest wait, or answer questions "
+                "about your visit. What would you like?"
+            ),
+            "recommendations": [],
+        }
+
+    blocks = _least_crowded_blocks(context)
+    hours = context.get("working_hours", {})
+    if blocks:
+        spans = ", ".join(
+            f"{b['date']} {b['start_hour']:02d}:00-{b['end_hour']:02d}:00" for b in blocks
         )
-    return ArrivalRecommendation(message=message, recommendations=blocks)
+        text_out = (
+            f"The hospital is open {hours.get('open_hour', OPEN_HOUR):02d}:00-"
+            f"{hours.get('close_hour', CLOSE_HOUR):02d}:00. The quietest times are: {spans}."
+        )
+    else:
+        text_out = "There are no working hours to recommend right now."
+    return {"intent": "SCHEDULE", "message": text_out, "recommendations": blocks}
 
 
-def recommend_arrival_times(
+class RuleBasedArrivalChatLLM:
+    """Deterministic reasoner for the demo/tests and the no-provider fallback (no network)."""
+
+    def reply(self, message: str, context: dict[str, Any]) -> dict[str, Any]:
+        return _deterministic_reply(message, context)
+
+
+def respond_to_chat(
     message: str,
     summary: list[DayLoad],
     llm: ArrivalChatLLM,
     *,
     open_hour: int = OPEN_HOUR,
     close_hour: int = CLOSE_HOUR,
-) -> ArrivalRecommendation:
-    """Reason over the reservation `summary` and return a validated `ArrivalRecommendation`.
+) -> AssistantReply:
+    """Run the assistant over the reservation `summary`; return a validated `AssistantReply`.
 
     Runs reason -> validate on PocketFlow (ADR-001): the reasoner is retried, its raw output is
     schema-validated, and on a reasoner error or off-schema output it degrades to the deterministic
-    least-crowded pick instead of raising or trusting unvalidated text.
+    reply instead of raising or trusting unvalidated text.
     """
     context = build_context(summary, open_hour=open_hour, close_hour=close_hour)
 
-    def _on_error() -> ArrivalRecommendation:
-        return _deterministic(summary, open_hour=open_hour, close_hour=close_hour)
+    def _on_error() -> AssistantReply:
+        return AssistantReply.model_validate(_deterministic_reply(message, context))
 
     return run_reason_flow(
         llm,
         message,
         context,
-        validate=ArrivalRecommendation.model_validate,
+        validate=AssistantReply.model_validate,
         on_error=_on_error,
         reason_errors=(ArrivalChatError,),
         validate_errors=(ValidationError,),
     )
-
-
-class RuleBasedArrivalChatLLM:
-    """Deterministic reasoner for the demo/tests and the no-provider fallback (no network).
-
-    Returns the same least-crowded pick as the on-error fallback, shaped as a raw dict so it flows
-    through the identical validation path a real client's output would.
-    """
-
-    def __init__(self, *, open_hour: int = OPEN_HOUR, close_hour: int = CLOSE_HOUR) -> None:
-        self._open_hour = open_hour
-        self._close_hour = close_hour
-
-    def reply(self, message: str, context: dict[str, Any]) -> dict[str, Any]:
-        del message  # the deterministic reasoner ranks by reservation count, not message content
-        blocks = [
-            {"date": day["date"], "hour": hour["hour"], "reservations": hour["reservations"]}
-            for day in context.get("days", [])
-            for hour in day["hours"]
-        ]
-        blocks.sort(key=lambda cell: (cell["reservations"], cell["date"], cell["hour"]))
-        chosen = blocks[:3]
-        recommendations = [
-            {
-                "date": cell["date"],
-                "start_hour": cell["hour"],
-                "end_hour": cell["hour"] + 1,
-                "reservation_count": cell["reservations"],
-                "reason": f"{cell['reservations']} reservation(s) in this hour",
-            }
-            for cell in chosen
-        ]
-        if recommendations:
-            spans = ", ".join(
-                f"{c['date']} {c['start_hour']:02d}:00-{c['end_hour']:02d}:00"
-                for c in recommendations
-            )
-            text = (
-                f"The hospital is open {self._open_hour:02d}:00-{self._close_hour:02d}:00. "
-                f"The quietest times to come are: {spans}."
-            )
-        else:
-            text = "There are no working hours to recommend right now."
-        return {"message": text, "recommendations": recommendations}

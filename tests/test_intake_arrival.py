@@ -22,9 +22,9 @@ from vaic.agents.intake.arrival import (
 )
 from vaic.agents.intake.arrival_chat import (
     ArrivalChatError,
-    ArrivalRecommendation,
+    AssistantReply,
     RuleBasedArrivalChatLLM,
-    recommend_arrival_times,
+    respond_to_chat,
 )
 from vaic.models import Appointment, AppointmentStatus
 from vaic.state import InMemoryRepository
@@ -109,52 +109,62 @@ class _FailingArrivalLLM:
         raise ArrivalChatError("provider down")
 
 
-def test_rule_based_reasoner_picks_least_crowded_first():
-    result = recommend_arrival_times(
-        "when should I come?", _summary_fixture(), RuleBasedArrivalChatLLM()
-    )
+def test_scheduling_intent_picks_least_crowded_first():
+    result = respond_to_chat("when should I come?", _summary_fixture(), RuleBasedArrivalChatLLM())
 
-    assert isinstance(result, ArrivalRecommendation)
+    assert isinstance(result, AssistantReply)
+    assert result.intent == "SCHEDULE"
     counts = [b.reservation_count for b in result.recommendations]
     assert counts == sorted(counts)
     assert result.recommendations[0].reservation_count == 0
     assert result.recommendations[0].start_hour == 6
 
 
+def test_non_scheduling_message_is_plain_chat():
+    result = respond_to_chat("hello, thank you!", _summary_fixture(), RuleBasedArrivalChatLLM())
+
+    assert result.intent == "CHAT"
+    assert result.recommendations == []  # a normal chat turn suggests no times
+
+
 def test_valid_llm_output_is_used():
     payload = {
+        "intent": "SCHEDULE",
         "message": "Come between 06:00 and 07:00 on Monday.",
         "recommendations": [
             {"date": "2026-07-20", "start_hour": 6, "end_hour": 7, "reservation_count": 0,
              "reason": "empty"}
         ],
     }
-    result = recommend_arrival_times("hi", _summary_fixture(), _FakeArrivalLLM(payload))
+    result = respond_to_chat("when?", _summary_fixture(), _FakeArrivalLLM(payload))
 
+    assert result.intent == "SCHEDULE"
     assert result.message == "Come between 06:00 and 07:00 on Monday."
     assert result.recommendations[0].start_hour == 6
 
 
 def test_failing_provider_degrades_to_deterministic():
-    result = recommend_arrival_times("hi", _summary_fixture(), _FailingArrivalLLM())
+    result = respond_to_chat("when should I come?", _summary_fixture(), _FailingArrivalLLM())
 
-    assert isinstance(result, ArrivalRecommendation)
+    assert isinstance(result, AssistantReply)
     assert result.recommendations[0].reservation_count == 0  # deterministic fallback still answers
 
 
 def test_offschema_output_degrades_to_deterministic():
-    result = recommend_arrival_times("hi", _summary_fixture(), _FakeArrivalLLM({"unexpected": 1}))
+    result = respond_to_chat(
+        "when should I come?", _summary_fixture(), _FakeArrivalLLM({"unexpected": 1})
+    )
 
-    assert isinstance(result, ArrivalRecommendation)
+    assert isinstance(result, AssistantReply)
     assert result.recommendations[0].start_hour == 6
 
 
 def test_llm_block_outside_working_hours_is_rejected():
     # start_hour 25 violates the schema bound -> validation fails -> deterministic fallback.
-    payload = {"message": "x", "recommendations": [
+    payload = {"intent": "SCHEDULE", "message": "x", "recommendations": [
         {"date": "2026-07-20", "start_hour": 25, "end_hour": 26, "reservation_count": 0}
     ]}
-    result = recommend_arrival_times("hi", _summary_fixture(), _FakeArrivalLLM(payload))
+    result = respond_to_chat("when should I come?", _summary_fixture(), _FakeArrivalLLM(payload))
 
     assert result.recommendations[0].start_hour == 6  # fell back, did not trust the bad block
 
