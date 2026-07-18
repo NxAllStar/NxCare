@@ -7,6 +7,13 @@ explicitly: `from vaic.state.sql import get_engine, create_schema`.
 
 from __future__ import annotations
 
-from .engine import build_url, create_schema, get_engine
+from .engine import build_url, create_database_if_missing, create_schema, get_engine
+from .seed import seed_nxcare
 
-__all__ = ["build_url", "create_schema", "get_engine"]
+__all__ = [
+    "build_url",
+    "create_database_if_missing",
+    "create_schema",
+    "get_engine",
+    "seed_nxcare",
+]

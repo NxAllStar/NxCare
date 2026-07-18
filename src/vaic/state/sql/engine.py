@@ -65,3 +65,30 @@ def create_schema(engine: Engine, schema_path: Path | None = None) -> None:
     with engine.begin() as conn:
         for statement in statements:
             conn.execute(text(statement))
+
+
+def create_database_if_missing(maintenance_url: str, dbname: str) -> bool:
+    """`CREATE DATABASE dbname` against the server `maintenance_url` connects to, if it does not
+    already exist. Returns True if it was created, False if it already existed.
+
+    `CREATE DATABASE` cannot run inside a transaction block, so this connects with autocommit.
+    `maintenance_url` should point at an existing database on the target server (e.g. the server's
+    default `postgres` database), never at `dbname` itself.
+    """
+    engine = create_engine(maintenance_url, isolation_level="AUTOCOMMIT")
+    try:
+        with engine.connect() as conn:
+            exists = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": dbname}
+            ).first()
+            if exists:
+                return False
+            # Identifier, not a value - cannot be a bound parameter; dbname is operator-supplied
+            # (task-file-recorded, never end-user input), and quote_ident-style validation below
+            # keeps this from being a SQL-injection vector.
+            if not dbname.replace("_", "").isalnum():
+                raise ValueError(f"unsafe database name: {dbname!r}")
+            conn.execute(text(f'CREATE DATABASE "{dbname}"'))
+            return True
+    finally:
+        engine.dispose()
