@@ -37,13 +37,21 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-008 | Care Plan + proceed gate + slot allocation (FR-03, FR-04, FR-05, FR-08) | careplan-dev | TASK-004, TASK-006 | P1 | 2 | Planned |
 | TASK-009 | Journey + notifications + patient-code scan + SMS (FR-06, FR-11, FR-15, FR-17) | journey-dev | TASK-008 | P1 | 2 | Planned |
 | TASK-010 | Coordinator + Disruption tiered autonomy (FR-09, FR-10) | agent-core-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
-| TASK-011 | Frontend: chat, timeline, coordinator dashboard (FR-12 + screens) | frontend-ui-dev | TASK-007, TASK-008 | P1 | 2 | Planned |
+| TASK-011 | Frontend: chat, timeline, coordinator dashboard (FR-12 + screens) - SUPERSEDED by TASK-021..024 (patient-only re-scope, 2026-07-18) | frontend-ui-dev | TASK-007, TASK-008 | P1 | 2 | Pending |
 | TASK-012 | A/B eval vs FIFO baseline + demo script + metrics | simulator-dev | TASK-010, TASK-011 | P2 | 3 | Planned |
 | TASK-013 | Auth + role-based access: login, session, server-side authz (FR-18) | agent-core-dev | TASK-003, TASK-004 | P1 | 2 | Done |
-| TASK-014 | Rounded-app features: reschedule/cancel, notifications center, settings+VI/EN, patient search (FR-19..22) | frontend-ui-dev | TASK-011, TASK-013 | P2 | 2 | Planned |
-| TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 | frontend-ui-dev | TASK-011 | P2 | 2 | Planned |
+| TASK-014 | Rounded-app features: reschedule/cancel, notifications center, settings+VI/EN, patient search (FR-19..22) - SUPERSEDED by TASK-023 (patient slice) + dropped staff search, 2026-07-18 | frontend-ui-dev | TASK-011, TASK-013 | P2 | 2 | Pending |
+| TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 - SUPERSEDED by TASK-021 (patient app foundation/shell), 2026-07-18 | frontend-ui-dev | TASK-011 | P2 | 2 | Pending |
 | TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | data-modeler | TASK-003 | P2 | 2 | Planned |
 | TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Planned |
+| TASK-018 | Relocate patient-app IA/sitemap + feature-architecture into a governed PRD; link spec 10 out to it | ba-analyst | - | P2 | 2 | Done |
+| TASK-019 | Scaffold frontend/ (Vite+React+TS+Tailwind+shadcn) plumbing-only; relocate design tokens into it | frontend-ui-dev | - | P2 | 2 | Done |
+| TASK-020 | Author /design-system project command + register it in AGENTS.md commands table | orchestrator | TASK-018, TASK-019 | P2 | 2 | Done |
+| TASK-021 | Patient app foundation, shell, 5-tab nav, patient login, i18n VI/EN, mock-data layer, shared primitives (patient-only re-scope) | frontend-ui-dev | TASK-019 | P1 | 2 | Done |
+| TASK-022 | Patient P0 golden-path screens: home dual-mode, journey (SCR-02), assistant, intake (SCR-01), book, checkin | frontend-ui-dev | TASK-021 | P1 | 2 | Done |
+| TASK-023 | Patient P1 screens: notifications (SCR-09), settings (SCR-10), journey-step, results, meds, recovery, billing (display-only), family, prep | frontend-ui-dev | TASK-022 | P2 | 2 | Done |
+| TASK-024 | Patient UI QA: Vitest suite + Playwright golden-path e2e + code/security review gates + secret-scan | qa-test | TASK-022, TASK-023 | P1 | 2 | Planned |
+| TASK-025 | Patient app visual upgrade to iOS-native design (all screens + shell) per owner design | frontend-ui-dev | TASK-023 | P2 | 2 | Done |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 

@@ -139,6 +139,7 @@ Run it with `/implement-fr FR-NN`.
 | `/new-spec-section`, `/sync-context` | Documentation upkeep |
 | `/seed-db` | Synthetic seed data, local and development only |
 | `/scaffold-feature <slug>` | Feature skeleton |
+| `/design-system [focus]` | Surface the design system - direction, concrete tokens, patient-app IA - in one shot before UI work |
 | `/deploy` | Gated. Explicit user request only, after approval and merge |
 
 ## Testing

@@ -1,0 +1,70 @@
+# ============================================================
+#  Kept from your original .gitignore
+# ============================================================
+frontend/node_modules.orig-rootowned
+test-results
+
+# Push docs + governance in full (specs, tasks, rules, agents, settings).
+# Only the transient agent run-archive stays out - it is disk/backup state,
+# not source (see .claude/rules/model-policy.md "Prompts and transcripts").
+.claude/state/history/
+
+# ============================================================
+#  Dependencies & build output
+# ============================================================
+node_modules/
+**/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+*.tsbuildinfo
+
+# ============================================================
+#  Test / coverage / e2e artifacts
+# ============================================================
+coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+
+# ============================================================
+#  Caches
+# ============================================================
+.vite/
+.eslintcache
+.cache/
+.turbo/
+
+# ============================================================
+#  Secrets / local env - NEVER push these
+# ============================================================
+.env
+.env.*
+!.env.example
+*.local
+
+# ============================================================
+#  Logs
+# ============================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================================================
+#  OS / editor cruft
+# ============================================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# ============================================================
+#  Design source bundle (1.5MB reference; remove this line if
+#  you want to keep the .html design file in the repo)
+# ============================================================
+Patient Companion App.html
