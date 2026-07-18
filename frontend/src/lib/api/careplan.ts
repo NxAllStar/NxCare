@@ -24,7 +24,7 @@ export interface ResolvedPatient {
   patientCode: string;
 }
 
-interface PatientTaskOut {
+export interface PatientTaskOut {
   taskId: string;
   serviceTypeCode: string;
   serviceTypeLabel: string;
@@ -55,6 +55,10 @@ export interface CarePlanView {
   carePlan: CarePlan;
   tasks: Task[];
   payments: Payment[];
+  // The backend tasks unmapped, so a caller that needs fields the FE `Task` shape drops (e.g. the
+  // companion journey needs `serviceTypeCode` to label a room per service) can still reach them.
+  // Optional only so lightweight test builders need not synthesize them; the real fetch always sets it.
+  rawTasks?: PatientTaskOut[];
 }
 
 /** Mint-or-lookup the patient's canonical id by scannable code. */
@@ -151,5 +155,5 @@ function mapActiveCarePlan(body: ActiveCarePlanResponse, patientId: string): Car
     confirmedBy: null,
     confirmedAt: null,
   }));
-  return { carePlan, tasks, payments };
+  return { carePlan, tasks, payments, rawTasks: body.tasks };
 }

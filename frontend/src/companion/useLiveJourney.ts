@@ -19,15 +19,30 @@ import type { JourneyStep } from './state';
 
 const COMPANION_PATIENT_CODE = 'BN-941207';
 
-// Friendly room labels for the seeded demo stations (api/demo_state.py DEMO_CAREPLAN_STATIONS), so
-// live steps read like the design's static ones instead of showing a raw UUID.
-const STATION_ROOMS: Record<string, string> = {
-  '00000000-0000-0000-0000-000000000011': 'Trạm 1 – Tầng 1',
-  '00000000-0000-0000-0000-000000000012': 'Trạm 2 – Tầng 1',
-  '00000000-0000-0000-0000-000000000013': 'Trạm 3 – Tầng 1',
+// The room a service happens in is a property of the SERVICE, not of the queue-assigned technician
+// station (the backend routes by load, so `resourceId` is just whichever station was least busy).
+// Mapping by `serviceTypeCode` is what gives each step its real location - "Lấy máu -> Phòng lấy
+// máu", "Siêu âm -> Phòng siêu âm" - instead of a generic station label. Codes match the seeded
+// catalog (api/demo_state.py DEMO_SERVICE_CATALOG).
+const SERVICE_ROOMS: Record<string, string> = {
+  BLOOD_TEST: 'Phòng lấy máu – Tầng 1',
+  XRAY_CHEST: 'Phòng X-quang – Tầng 1',
+  XRAY_ABDOMEN: 'Phòng X-quang – Tầng 1',
+  CT_CHEST: 'Phòng CT – Tầng 2',
+  ULTRASOUND_ABDOMEN: 'Phòng siêu âm – Tầng 1',
+  ENDOSCOPY_GASTRIC: 'Phòng nội soi – Tầng 2',
 };
 
-function timeLabel(iso: string, upcoming: boolean): string {
+const SERVICE_DIRECTIONS: Record<string, string> = {
+  BLOOD_TEST: 'Khu lấy máu ở tầng 1, ngay cạnh quầy tiếp nhận.',
+  XRAY_CHEST: 'Phòng X-quang tầng 1, đi thẳng từ khu chờ rồi rẽ phải.',
+  XRAY_ABDOMEN: 'Phòng X-quang tầng 1, đi thẳng từ khu chờ rồi rẽ phải.',
+  CT_CHEST: 'Phòng CT tầng 2, lên thang máy khu A.',
+  ULTRASOUND_ABDOMEN: 'Phòng siêu âm tầng 1, đối diện quầy nước.',
+  ENDOSCOPY_GASTRIC: 'Phòng nội soi tầng 2, cạnh thang máy khu A.',
+};
+
+function timeLabel(iso: string | null, upcoming: boolean): string {
   if (!iso) return '';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
@@ -36,8 +51,9 @@ function timeLabel(iso: string, upcoming: boolean): string {
   return `${upcoming ? '~' : ''}${hh}:${mm}`;
 }
 
-function toJourneySteps(view: careplanApi.CarePlanView): JourneyStep[] {
-  return view.tasks.map((task) => {
+function toJourneySteps(tasks: careplanApi.PatientTaskOut[]): JourneyStep[] {
+  const ordered = [...tasks].sort((a, b) => a.sequenceIndex - b.sequenceIndex);
+  const steps: JourneyStep[] = ordered.map((task) => {
     const status: JourneyStep['status'] =
       task.executionStatus === 'DONE'
         ? 'done'
@@ -45,15 +61,21 @@ function toJourneySteps(view: careplanApi.CarePlanView): JourneyStep[] {
           ? 'active'
           : 'upcoming';
     return {
-      id: task.id,
-      label: task.label,
-      time: task.createdAt
-        ? timeLabel(task.createdAt, status === 'upcoming')
-        : `~${task.estimatedDurationMin} phút`,
+      id: task.taskId,
+      label: task.serviceTypeLabel,
+      time: task.start ? timeLabel(task.start, status !== 'done') : `~${task.durationMin} phút`,
       status,
-      room: STATION_ROOMS[task.ownerId] ?? 'Phòng xét nghiệm',
+      room: SERVICE_ROOMS[task.serviceTypeCode] ?? task.serviceTypeLabel,
+      directions: SERVICE_DIRECTIONS[task.serviceTypeCode],
     };
   });
+  // Backend tasks start LOCKED (unpaid) so none is IN_PROGRESS - give the timeline a visible current
+  // step by marking the first not-yet-done step active, mirroring the design's single active node.
+  if (steps.length > 0 && !steps.some((step) => step.status === 'active')) {
+    const firstPending = steps.find((step) => step.status !== 'done');
+    if (firstPending) firstPending.status = 'active';
+  }
+  return steps;
 }
 
 /**
@@ -75,7 +97,8 @@ export function useLiveJourney(): { steps: JourneyStep[] | null } {
         async function load() {
           const view = await careplanApi.fetchActiveCarePlan(patientId);
           if (cancelled) return;
-          setSteps(view && view.tasks.length > 0 ? toJourneySteps(view) : null);
+          const rawTasks = view?.rawTasks ?? [];
+          setSteps(rawTasks.length > 0 ? toJourneySteps(rawTasks) : null);
         }
 
         await load();
