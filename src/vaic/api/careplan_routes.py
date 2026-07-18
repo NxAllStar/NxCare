@@ -43,7 +43,16 @@ from ..agents.careplan.routing import (
 )
 from ..agents.careplan.slots import build_allocate_slot_tool
 from ..agents.core import ActionExecutor
-from ..models import Appointment, Diagnosis, ServiceOrder, ServiceType, Slot
+from ..models import (
+    Appointment,
+    CarePlan,
+    CarePlanStatus,
+    Diagnosis,
+    ServiceOrder,
+    ServiceType,
+    Slot,
+    Task,
+)
 from ..state import Repository
 from ..tools import AuditLog, ConstraintChecker, ToolRegistry
 from .demo_state import DEMO_CAREPLAN_STATIONS
@@ -84,6 +93,28 @@ class CarePlanGenerateResponse(BaseModel):
     status: str
     allSlotted: bool
     route: list[RouteStepOut]
+
+
+class PatientTaskOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    taskId: str
+    serviceTypeCode: str
+    serviceTypeLabel: str
+    resourceId: str
+    start: str | None
+    durationMin: int
+    sequenceIndex: int
+    executionStatus: str
+    paymentStatus: str
+
+
+class ActiveCarePlanResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    carePlanId: str
+    status: str
+    tasks: list[PatientTaskOut]
 
 
 def _build_executor(repo: Repository) -> ActionExecutor:
@@ -192,6 +223,51 @@ def build_careplan_router(repo: Repository) -> APIRouter:
             status=result.care_plan.status.value,
             allSlotted=result.all_slotted,
             route=route,
+        )
+
+    @router.get("/patient/{patient_id}/active", response_model=ActiveCarePlanResponse)
+    def get_active_care_plan(patient_id: UUID) -> ActiveCarePlanResponse:
+        """Read-side companion to `/generate`: the patient screen's source for FR-04's handoff.
+
+        Returns the patient's most recently created `ACTIVE` `CarePlan` with its tasks, sequenced
+        and enriched with the `ServiceType` label/code each task's `ServiceOrder` references - the
+        same lookup a `DRAFT` plan (not yet fully slotted, see the failure/rollback contract in
+        `care_plan.py`) is deliberately excluded from, since it is not yet ready to show a patient.
+        """
+        plans = [
+            plan
+            for plan in repo.list(CarePlan, patient_id=patient_id)
+            if plan.status is CarePlanStatus.ACTIVE
+        ]
+        if not plans:
+            raise HTTPException(404, detail="no active care plan for this patient")
+        plan = max(plans, key=lambda p: p.created_at)
+
+        tasks = sorted(repo.list(Task, care_plan_id=plan.id), key=lambda t: t.sequence_index)
+        task_out: list[PatientTaskOut] = []
+        for task in tasks:
+            order = repo.get(ServiceOrder, task.service_order_id)
+            assert order is not None  # created together with the task in generate_care_plan
+            service_type = repo.get(ServiceType, order.service_type_id)
+            assert service_type is not None
+            slots = repo.list(Slot, task_id=task.id)
+            slot = slots[0] if slots else None
+            task_out.append(
+                PatientTaskOut(
+                    taskId=str(task.id),
+                    serviceTypeCode=service_type.code,
+                    serviceTypeLabel=service_type.display_label,
+                    resourceId=str(task.owner_id),
+                    start=slot.start.isoformat() if slot is not None else None,
+                    durationMin=task.estimated_duration_min,
+                    sequenceIndex=task.sequence_index,
+                    executionStatus=task.execution_status.value,
+                    paymentStatus=task.payment_status.value,
+                )
+            )
+
+        return ActiveCarePlanResponse(
+            carePlanId=str(plan.id), status=plan.status.value, tasks=task_out
         )
 
     return router

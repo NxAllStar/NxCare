@@ -149,3 +149,47 @@ def test_generate_routes_to_the_least_busy_station_first(monkeypatch):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["route"][0]["resourceId"] == str(light_station)
+
+
+def test_get_active_care_plan_returns_the_generated_route(monkeypatch):
+    repo = InMemoryRepository()
+    _patch_router_stations(monkeypatch)
+    _seed_stations(repo)
+    repo.save(ServiceType(code="BLOOD_TEST", display_label="Xet nghiem mau",
+                          requires_fasting=True, turnaround_minutes=30, default_duration_min=10))
+    appointment = repo.save(Appointment(patient_id=uuid4(), specialty="general"))
+
+    client = _client(repo)
+    generated = client.post(
+        "/api/careplan/generate",
+        json={
+            "patient_id": str(appointment.patient_id),
+            "appointment_id": str(appointment.id),
+            "diagnosed_by": str(uuid4()),
+            "service_type_names": ["blood_test"],
+        },
+    )
+    assert generated.status_code == 200, generated.text
+
+    response = client.get(f"/api/careplan/patient/{appointment.patient_id}/active")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["carePlanId"] == generated.json()["carePlanId"]
+    assert body["status"] == "ACTIVE"
+    assert len(body["tasks"]) == 1
+    task = body["tasks"][0]
+    assert task["serviceTypeCode"] == "BLOOD_TEST"
+    assert task["executionStatus"] == "LOCKED"
+    assert task["paymentStatus"] == "UNPAID"
+
+
+def test_get_active_care_plan_404s_when_patient_has_none(monkeypatch):
+    repo = InMemoryRepository()
+    _patch_router_stations(monkeypatch)
+    _seed_stations(repo)
+
+    client = _client(repo)
+    response = client.get(f"/api/careplan/patient/{uuid4()}/active")
+
+    assert response.status_code == 404
