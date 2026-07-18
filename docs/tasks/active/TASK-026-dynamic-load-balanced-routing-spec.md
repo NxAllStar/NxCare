@@ -1,5 +1,5 @@
 ---
-title: "TASK-018: Spec FR-23 dynamic queue-driven load-balanced routing"
+title: "TASK-026: Spec FR-23 dynamic queue-driven load-balanced routing"
 status: Active
 fr: FR-23
 owner: ba-analyst
@@ -12,7 +12,7 @@ tags: [task]
 
 <!-- Task files are written 100% in English (see .claude/rules/task-tracking.md). -->
 
-# TASK-018: Spec FR-23 dynamic queue-driven load-balanced routing
+# TASK-026: Spec FR-23 dynamic queue-driven load-balanced routing
 
 A status change is written in BOTH places at once: the `status:` field above, and this task's row
 in `docs/tasks/master-plan.md`. They must never disagree.

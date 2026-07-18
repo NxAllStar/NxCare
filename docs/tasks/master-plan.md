@@ -44,7 +44,6 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 - SUPERSEDED by TASK-021 (patient app foundation/shell), 2026-07-18 | frontend-ui-dev | TASK-011 | P2 | 2 | Pending |
 | TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | data-modeler | TASK-003 | P2 | 2 | Planned |
 | TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Done |
-| TASK-018 | Spec FR-23 dynamic queue-driven load-balanced routing (per-station wait, dynamic generation, rebalance-after-each-step) | ba-analyst | - | P1 | 2 | Active |
 | TASK-018 | Relocate patient-app IA/sitemap + feature-architecture into a governed PRD; link spec 10 out to it | ba-analyst | - | P2 | 2 | Done |
 | TASK-019 | Scaffold frontend/ (Vite+React+TS+Tailwind+shadcn) plumbing-only; relocate design tokens into it | frontend-ui-dev | - | P2 | 2 | Done |
 | TASK-020 | Author /design-system project command + register it in AGENTS.md commands table | orchestrator | TASK-018, TASK-019 | P2 | 2 | Done |
@@ -53,6 +52,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-023 | Patient P1 screens: notifications (SCR-09), settings (SCR-10), journey-step, results, meds, recovery, billing (display-only), family, prep | frontend-ui-dev | TASK-022 | P2 | 2 | Done |
 | TASK-024 | Patient UI QA: Vitest suite + Playwright golden-path e2e + code/security review gates + secret-scan | qa-test | TASK-022, TASK-023 | P1 | 2 | Planned |
 | TASK-025 | Patient app visual upgrade to iOS-native design (all screens + shell) per owner design | frontend-ui-dev | TASK-023 | P2 | 2 | Done |
+| TASK-026 | Spec FR-23 dynamic queue-driven load-balanced routing (per-station wait, dynamic generation, rebalance-after-each-step) | ba-analyst | - | P1 | 2 | Active |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
