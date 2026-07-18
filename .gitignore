@@ -217,6 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Zip archives
+**.zip
+
 # ============================================================
 #  Kept from your original .gitignore
 # ============================================================

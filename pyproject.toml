@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "VAIC - AI Care Pathway Coordinator (hackathon demo)"
 requires-python = ">=3.11"
 dependencies = [
+    "openai>=1.0",
+    "pocketflow>=0.0.3",
     "pydantic>=2.7",
+    "pydantic-settings>=2.0",
     "redis>=5.0",
     "simpy>=4.1",
 ]
