@@ -1,7 +1,7 @@
 """The action spine: closed-action-space check -> constraint checker -> tool -> audit.
 
 Every action an agent takes goes through here, so the guardrails cannot be bypassed and every
-decision (allowed, blocked, or failed) is audited (FR-13). Framework-agnostic: no LangGraph import.
+decision (allowed, blocked, or failed) is audited (FR-13). Framework-agnostic: no PocketFlow import.
 """
 
 from __future__ import annotations

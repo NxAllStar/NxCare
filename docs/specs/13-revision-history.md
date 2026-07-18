@@ -19,6 +19,8 @@ tags: [specs, history, vaic]
 | 1.2 | 2026-07-17 | Team lead | Chốt [OI-20](11-assumptions-constraints.md#oi-20) (Forecast = LLM-as-a-tool), [OI-21](11-assumptions-constraints.md#oi-21) (quét mô phỏng), [OI-01](11-assumptions-constraints.md#oi-01) (learning loop ngoài scope, bỏ bước demo MAE). / Resolved OI-20, OI-21, OI-01. | Team lead |
 | 1.3 | 2026-07-17 | Team lead | Thêm Grounding contract cho forecast-LLM (retrieve-reason-validate) trong [FR-07](05-functional-requirements.md#fr-07) + AC-07.3/07.4; thêm luồng cấp cứu [BF-05](04-business-flows.md) và thu hẹp [OI-09](11-assumptions-constraints.md#oi-09) còn danh sách red-flag lâm sàng; thêm `IntakeSession.emergency_suspected`. / Added the forecast-LLM grounding contract and BF-05 emergency escalation; narrowed OI-09. | Team lead |
 | 1.4 | 2026-07-18 | Team lead | Định nghĩa "rounded app": một web app responsive phân quyền theo vai; thêm 5 FR hỗ trợ [FR-18](05-functional-requirements.md#fr-18)..[FR-22](05-functional-requirements.md#fr-22) (auth, đổi/hủy lịch, trung tâm thông báo, cài đặt+VI/EN, tìm bệnh nhân); thêm màn hình SCR-08..11; thêm "Visual design direction" (design system Tailwind+shadcn) trong [10](10-ui-ux-wireframes.md); thêm mục "App concept and platform" trong [01](01-overview.md); non-goal: không tự đăng ký bệnh nhân (AS-06); thu hẹp OI-11 (auth demo qua FR-18). / Defined the rounded app: one responsive role-gated web app; added FR-18..22, screens SCR-08..11, a design-system direction, an app-concept section; no self-registration; narrowed OI-11. | Team lead |
+| 1.5 | 2026-07-18 | ba-analyst | Neo brief cuộc thi (nguyên văn) làm nguồn yêu cầu dẫn dắt trong [01](01-overview.md#contest-brief); thêm bảng truy vết 5 core feature -> FR (Feat 1 -> FR-02/FR-08, Feat 2 -> FR-01/FR-06, Feat 3 -> FR-07/FR-11/FR-15, Feat 4 -> FR-04, Feat 5 -> FR-09/FR-10) và bảng 4 success metric -> G-01..G-04; không FR nào mới, không yêu cầu nào bị diễn giải lại. Ghi nhận một gap thực: "patient category" của Feature 2 chưa có trường tường minh trong schema triage [FR-01](05-functional-requirements.md#fr-01) -> thêm [OI-23](11-assumptions-constraints.md#oi-23). / Anchored the contest brief verbatim as the guiding requirement source in 01-overview.md; added a 5-core-feature-to-FR traceability table and a 4-success-metric-to-goal table; no FR added or restated. Flagged one genuine gap: Feature 2's "patient category" has no explicit field in FR-01's triage schema, recorded as OI-23. | Team lead (pending review) |
+| 2.0 | 2026-07-18 | Team lead | Thêm [FR-23](05-functional-requirements.md#fr-23) (điều phối tải động theo hàng đợi từng trạm): định nghĩa thời gian chờ mỗi trạm `station_wait = hàng đợi PAID × thời gian phục vụ TB` từ [FR-07](05-functional-requirements.md#fr-07), sinh lộ trình cân bằng tải động thay vì lịch cố định, và tái cân bằng sau mỗi trạm hoàn tất; BR-33..35, US-22; sắc hóa [BF-03](04-business-flows.md) và liên kết Related từ [FR-04](05-functional-requirements.md#fr-04)/[FR-06](05-functional-requirements.md#fr-06)/[FR-07](05-functional-requirements.md#fr-07). Không đổi data model (`station_wait` là đại lượng suy ra, transient). / Added FR-23 (dynamic queue-driven load-balanced routing): per-station waiting time from FR-07, dynamic load-balanced route generation instead of fixed scheduling, and rebalancing after each completed station; BR-33..35, US-22; sharpened BF-03 and Related links from FR-04/06/07. No data-model change (station_wait is derived, transient). | pending |
 
 <!-- Versioning: 1.0 first complete set; 1.x clarifications and resolved open issues; 2.0 the
      contract moved (an FR added, dropped, or materially changed). -->
@@ -37,6 +39,10 @@ tags: [specs, history, vaic]
 | 1.4 | [10](10-ui-ux-wireframes.md) | Thêm SCR-08..11 + "Visual design direction" (design system) + nav/login | Rounded app + UX criterion |
 | 1.4 | [01](01-overview.md) | Thêm "App concept and platform"; scope + non-goal (no self-registration) | App shape decision |
 | 1.4 | [11](11-assumptions-constraints.md) | AS-06; resolved OI-00g/h/i; narrowed OI-11 | Recorded decisions |
+| 1.5 | [01](01-overview.md) | Thêm mục "Contest brief (guiding source)": brief nguyên văn + bảng truy vết feature-to-FR + bảng success-metric-to-goal; cập nhật References / added the contest-brief section, two traceability tables, updated References | Owner yêu cầu brief làm nguồn dẫn dắt (Team lead) |
+| 1.5 | [11](11-assumptions-constraints.md) | Thêm OI-23 (gap "patient category" trong FR-01) / added OI-23 | Rà soát brief so với FR-01 |
+| 2.0 | [05](05-functional-requirements.md) | Thêm FR-23 + BR-33..35 + US-22 + traceability; liên kết Related ở FR-04/06/07 / added FR-23, BR-33..35, US-22, traceability, Related links | Cân bằng tải động theo nhu cầu thực (owner request) |
+| 2.0 | [04](04-business-flows.md) | Sắc hóa BF-03: sắp xếp cân bằng tải theo thời gian chờ mỗi trạm + tái cân bằng sau mỗi trạm / sharpened BF-03 for per-station-wait load balancing and after-each-step rebalance | Đồng bộ với FR-23 |
 
 ## Requirement lifecycle
 
@@ -46,6 +52,7 @@ tags: [specs, history, vaic]
 | ID | Status | Version | Note |
 |----|--------|---------|------|
 | FR-16 | Deferred (Won't this release) | 1.0 | Learning loop ngoài phạm vi bản này; giữ ID cho release sau; mâu thuẫn demo tại [OI-01](11-assumptions-constraints.md#oi-01) / out of scope this release, ID reserved |
+| FR-23 | Added | 2.0 | Điều phối tải động theo hàng đợi từng trạm; sắc hóa FR-04/06/07 và BF-03 / dynamic queue-driven load balancing |
 
 ## Approval
 

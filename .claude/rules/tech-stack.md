@@ -15,9 +15,10 @@ ratified it is marked and carries an open issue - do not silently pick one.
 ## Backend and agents (Python)
 
 - **Language**: Python 3.11+. Package/deps in `pyproject.toml`.
-- **Agent framework**: LangGraph OR a FastAPI tool-use loop - NOT yet ratified (spec OI-18). Decide via
-  `/brainstorm` -> `/new-adr` before building the runtime. Until then, isolate framework-specific code
-  behind the agent-core interface so the choice stays reversible.
+- **Agent framework**: PocketFlow (~100-line graph lib, zero deps), ratified in ADR-001 (spec OI-18),
+  isolated behind the `src/vaic/agents/core` interface. LangGraph is the documented reversal fallback
+  (ADR-001 reversal condition). Keep framework-specific code behind agent-core so the choice stays
+  reversible; individual agents and tools are plain framework-agnostic Python.
 - **Serving**: FastAPI for tool endpoints and the API the frontend consumes.
 - **LLM access**: hosted API for the Coordinator/Disruption reasoning seats; self-hosted Qwen for
   Intake / Journey / the forecast-LLM. All model output is validated against a schema before use

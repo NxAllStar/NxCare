@@ -27,7 +27,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 
 | Task | Title | Owner | Deps | Priority | Phase | Status |
 |------|-------|-------|------|----------|-------|--------|
-| TASK-001 | Decide agent framework (LangGraph vs FastAPI tool-loop) -> ADR (spec OI-18) | tech-researcher | - | P0 | 1 | Active |
+| TASK-001 | Decide agent framework (LangGraph vs FastAPI tool-loop) -> ADR (spec OI-18) | tech-researcher | - | P0 | 1 | Done |
 | TASK-002 | Set governance policy: model sovereignty, residency, licences, IP ownership (KI-01..04) | ba-analyst | - | P0 | 1 | Planned |
 | TASK-003 | Data model + Redis state interface (entities from spec 08) | data-modeler | TASK-001 | P0 | 1 | Done |
 | TASK-004 | Agent/tool framework + deterministic constraint checker + audit log (FR-13) | agent-core-dev | TASK-001, TASK-003 | P0 | 1 | Done |
@@ -44,6 +44,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 | frontend-ui-dev | TASK-011 | P2 | 2 | Planned |
 | TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | data-modeler | TASK-003 | P2 | 2 | Planned |
 | TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Done |
+| TASK-018 | Spec FR-23 dynamic queue-driven load-balanced routing (per-station wait, dynamic generation, rebalance-after-each-step) | ba-analyst | - | P1 | 2 | Active |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 

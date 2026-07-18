@@ -1,6 +1,6 @@
 ---
 title: "TASK-001: Decide agent framework (LangGraph vs FastAPI tool-loop)"
-status: Active
+status: Done
 fr: "-"
 owner: tech-researcher
 deps: "-"
@@ -56,7 +56,15 @@ record it as an ADR, so every dev agent builds against a settled runtime (resolv
 |------|-----|---------------|--------|
 | 2026-07-18 | orchestrator (bootstrap) | Registered TASK-001 on the board and opened this file to smoke-test the task loop | Active |
 | 2026-07-18 | tech-researcher | Analysed LangGraph vs FastAPI tool-loop against spec constraints; scored trade-off matrix; drafted ADR-001 recommending LangGraph isolated behind agent-core, with a named fallback | ADR-001 Proposed |
+| 2026-07-18 | ba-analyst | Added PocketFlow as Option C to ADR-001 and named it the reversal fallback; ADR still Proposed | ADR-001 updated, awaiting Team-lead acceptance |
+| 2026-07-18 | ba-analyst | Team lead chose PocketFlow over LangGraph; rewrote ADR-001 Decision, options marker, Consequences, reversal condition, and follow-ups accordingly; ADR still Proposed | ADR-001 now proposes PocketFlow, awaiting Team-lead acceptance |
+| 2026-07-18 | Team lead | Ratified PocketFlow; flipped ADR-001 to Accepted (deciders set); updated tech-stack.md and the stale LangGraph comments in agent-core (agent.py, executor.py); closed this task | ADR-001 Accepted; TASK-001 Done |
 
 ## Result
 
-<Filled when the task moves to Done.>
+OI-18 resolved: **PocketFlow** is the ratified agent framework, isolated behind the
+`src/vaic/agents/core` interface, with **LangGraph** as the named reversal fallback (ADR-001 reversal
+condition). ADR-001 is Accepted and immutable. `.claude/rules/tech-stack.md` names PocketFlow and no
+longer marks the framework unratified. The two demo-critical primitives PocketFlow does not provide -
+interrupt/resume for tiered approval (FR-09) and streaming reasoning (demo step 3) - are hand-rolled
+and on the critical path; build and test them early (owned by TASK-010).

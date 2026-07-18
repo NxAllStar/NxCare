@@ -1,8 +1,8 @@
 """Framework-agnostic Agent base: perceive -> reason -> act.
 
 An agent perceives an event, reasons to a list of proposed Actions, and acts through the shared
-ActionExecutor so every action is checked and audited. If LangGraph is accepted (ADR-001), it wraps
-this shape; it does not replace it.
+ActionExecutor so every action is checked and audited. PocketFlow (ADR-001) wraps this shape behind
+the agent-core interface; it does not replace it.
 """
 
 from __future__ import annotations
