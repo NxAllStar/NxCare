@@ -78,6 +78,7 @@ the history in the task files. Only one orchestrator drives the project at a tim
 | `code-reviewer` | Judgment | opus / high | Read-only code-quality gate |
 | `security-reviewer` | Judgment | opus / high | Read-only secrets / PII / authz gate |
 | `debugger` | Judgment | opus / xhigh | Read-only root-cause analysis |
+| `judge` | Judgment | opus / high | Read-only strategic evaluation (110-point rubric: Technical, AI-Native Architecture, Business Viability, UX/Design, Safety, Presentation) |
 | `spec-guardian` | Implementation | sonnet / medium | Read-only requirement-drift check against `docs/specs/` |
 | `agent-core-dev` | Implementation | sonnet / high | `src/vaic/agents/core/`, `src/vaic/tools/` - Coordinator, Disruption, tool framework, constraint checker, audit (FR-09, FR-10, FR-13) |
 | `intake-dev` | Implementation | sonnet / high | `src/vaic/agents/intake/` - Intake triage, slot recommendation, emergency escalation (FR-01, FR-02, BF-05) |
@@ -114,6 +115,7 @@ Routing:
 | Requirement-drift check before and after a feature | `spec-guardian` |
 | Code review / security review (parallel gate) | `code-reviewer` / `security-reviewer` |
 | Root-cause on failing tests or incidents | `debugger` |
+| Strategic project evaluation against 6 criteria (tech, AI, business, UX, safety, presentation) | `judge` |
 | Options + trade-off analysis for a decision | `brainstormer` (+ `tech-researcher` for evidence) -> ADR |
 | Spec and PRD upkeep | `ba-analyst` |
 | Run archive curation | `history-tracker` |
