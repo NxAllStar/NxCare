@@ -58,6 +58,8 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-029 | Console SCR-05 technician task view | frontend-ui-dev | TASK-026 | P2 | 2 | Planned |
 | TASK-030 | Console SCR-07 admin and audit console (audit search + simulator seed/config, role split) | frontend-ui-dev | TASK-026 | P2 | 2 | Planned |
 | TASK-031 | Console QA: Vitest sweep + Playwright golden-path e2e + review gates + secret-scan | qa-test | TASK-027, TASK-028, TASK-029, TASK-030 | P1 | 2 | Planned |
+| TASK-032 | Hospital landing page and entry portal | frontend-ui-dev | TASK-025, TASK-026 | P2 | 2 | Done |
+
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
