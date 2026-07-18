@@ -35,7 +35,6 @@ from ..forecast import ForecastLLMError
 from ..state import Repository
 from .demo_state import DEMO_OWNER_BUSY, DEMO_OWNER_LIGHT
 
-router = APIRouter(prefix="/api/intake", tags=["intake"])
 logger = logging.getLogger(__name__)
 
 # Same fixed reference date the intake booking path uses (agents/intake/agent.py), so a slot's
@@ -113,8 +112,16 @@ class IntakeChatResponse(BaseModel):
 
 
 def build_intake_router(repo: Repository) -> APIRouter:
-    """Bind the demo `Repository` into the router's closure - one repo instance per running app."""
+    """Bind the demo `Repository` into the router's closure - one repo instance per running app.
 
+    A fresh `APIRouter()` per call, never a module-level singleton: a module-level router would
+    accumulate one `/chat` handler per call to this function (each bound to whatever `repo` was
+    passed that time), and since `vaic.api.__init__` imports `app.py` - which calls `create_app()`
+    at import time - merely IMPORTING this module anywhere already registers one such handler.
+    Route-level tests that build a second, independent router (their own isolated repo) would then
+    silently hit the first-registered handler's repo instead of their own.
+    """
+    router = APIRouter(prefix="/api/intake", tags=["intake"])
     triage_llm = build_triage_llm()  # real HttpTriageLLM when configured, else RuleBasedTriageLLM
 
     @router.post("/chat", response_model=IntakeChatResponse)

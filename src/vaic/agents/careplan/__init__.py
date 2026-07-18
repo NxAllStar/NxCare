@@ -33,6 +33,13 @@ from .orders import (
     build_create_service_order_tool,
     capture_diagnosis_and_orders,
 )
+from .routing import (
+    ServiceTypeResolution,
+    default_duration_estimator,
+    least_loaded_owner_resolver,
+    queue_aware_candidates_for,
+    resolve_service_types,
+)
 from .sequencing import SequencedOrder, sequence_orders
 from .slots import (
     AllocateSlotIn,
@@ -61,6 +68,11 @@ __all__ = [
     "build_create_diagnosis_tool",
     "build_create_service_order_tool",
     "capture_diagnosis_and_orders",
+    "ServiceTypeResolution",
+    "default_duration_estimator",
+    "least_loaded_owner_resolver",
+    "queue_aware_candidates_for",
+    "resolve_service_types",
     "SequencedOrder",
     "sequence_orders",
     "AllocateSlotIn",
