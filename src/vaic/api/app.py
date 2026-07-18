@@ -1,8 +1,9 @@
 """FastAPI entry point (tech-stack.md "Serving: FastAPI").
 
 `create_app` builds one process-wide demo `Repository`, seeds it (`demo_state.py`), and mounts the
-intake router. CORS is opened only to the configured frontend origin(s) - never `*` with
-credentials (security-privacy.md "Permissive CORS").
+intake router (patient-facing) and the staff router (front-desk/doctor-facing consult-queue
+actions). CORS is opened only to the configured frontend origin(s) - never `*` with credentials
+(security-privacy.md "Permissive CORS").
 """
 
 from __future__ import annotations
@@ -13,8 +14,15 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .demo_state import build_repository, seed_arrival_demo, seed_demo_resources
+from .demo_state import (
+    build_repository,
+    seed_arrival_demo,
+    seed_consult_queue_demo,
+    seed_demo_resources,
+    seed_service_types_demo,
+)
 from .intake_routes import build_intake_router
+from .staff_routes import build_staff_router
 
 
 def create_app() -> FastAPI:
@@ -37,7 +45,10 @@ def create_app() -> FastAPI:
     repo = build_repository()
     seed_demo_resources(repo)
     seed_arrival_demo(repo)
+    seed_service_types_demo(repo)
+    seed_consult_queue_demo(repo)
     app.include_router(build_intake_router(repo))
+    app.include_router(build_staff_router(repo))
 
     @app.get("/health")
     def health() -> dict[str, str]:
