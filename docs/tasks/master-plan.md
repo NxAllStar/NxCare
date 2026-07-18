@@ -52,6 +52,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-023 | Patient P1 screens: notifications (SCR-09), settings (SCR-10), journey-step, results, meds, recovery, billing (display-only), family, prep | frontend-ui-dev | TASK-022 | P2 | 2 | Done |
 | TASK-024 | Patient UI QA: Vitest suite + Playwright golden-path e2e + code/security review gates + secret-scan | qa-test | TASK-022, TASK-023 | P1 | 2 | Planned |
 | TASK-025 | Patient app visual upgrade to iOS-native design (all screens + shell) per owner design | frontend-ui-dev | TASK-023 | P2 | 2 | Done |
+| TASK-026 | Hospital web console foundation, shell, staff login, role routing (SCR-03..07 stubs) | frontend-ui-dev | TASK-021, TASK-013 | P1 | 2 | Active |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
