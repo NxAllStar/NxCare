@@ -17,7 +17,7 @@ tags: [specs, flows, vaic]
 |----|------|---------|---------------|--------|
 | BF-01 | Tiếp nhận và định tuyến khám chẩn đoán / Intake and routing to a diagnostic consult | Bệnh nhân mở chat triệu chứng / Patient opens symptom chat | role_patient | [FR-01](05-functional-requirements.md#fr-01), [FR-02](05-functional-requirements.md#fr-02) |
 | BF-02 | Khám và chẩn đoán / Consult and diagnosis | Bệnh nhân đến buổi khám chẩn đoán / Patient arrives for the diagnostic consult | role_doctor | [FR-03](05-functional-requirements.md#fr-03) |
-| BF-03 | Sinh care plan và điều phối thực hiện / Care-plan generation and execution | Bác sĩ hoàn tất chỉ định / Doctor finalises the orders | Care Plan Agent, role_patient | [FR-04](05-functional-requirements.md#fr-04), [FR-05](05-functional-requirements.md#fr-05), [FR-06](05-functional-requirements.md#fr-06), [FR-08](05-functional-requirements.md#fr-08) |
+| BF-03 | Sinh care plan và điều phối thực hiện / Care-plan generation and execution | Bác sĩ hoàn tất chỉ định / Doctor finalises the orders | Care Plan Agent, role_patient | [FR-04](05-functional-requirements.md#fr-04), [FR-05](05-functional-requirements.md#fr-05), [FR-06](05-functional-requirements.md#fr-06), [FR-08](05-functional-requirements.md#fr-08), [FR-23](05-functional-requirements.md#fr-23) |
 | BF-04 | Xử lý sự cố và tái điều phối / Disruption handling and re-coordination | Event bất thường (máy hỏng, quá tải, đổi lịch, cấp cứu) / Abnormal event | Coordinator Agent, role_coordinator | [FR-09](05-functional-requirements.md#fr-09), [FR-10](05-functional-requirements.md#fr-10), [FR-12](05-functional-requirements.md#fr-12) |
 | BF-05 | Chuyển tuyến cấp cứu / Emergency escalation | Intake Agent phát hiện dấu hiệu nghi cấp cứu / Intake Agent flags a suspected emergency signal | Intake Agent, role_coordinator | [FR-01](05-functional-requirements.md#fr-01) |
 
@@ -108,7 +108,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   Start(["Doctor finalises service orders"]) --> A["Care Plan Agent builds Task list - owner, duration, dependencies"]
-  A --> B["Care Plan Agent sequences tasks and allocates slots"]
+  A --> B["Care Plan Agent sequences tasks (queue-preferential, parallel-eligible where independent - FR-23) and allocates slots"]
   B --> C{"Task payment status PAID?"}
   C -->|"No"| L["Task LOCKED - excluded from queues and load"]
   L --> R["Journey Agent reminds patient to pay"]
@@ -130,7 +130,7 @@ flowchart LR
 | # | Actor | Action | System behaviour | Requirement |
 |---|-------|--------|------------------|-------------|
 | 1 | Care Plan Agent | Chuyển chỉ định thành task / Turns orders into tasks | Mỗi `Task`: owner, duration (từ Forecast), ràng buộc/phụ thuộc, payment_status, execution_status / Each task carries owner, forecast duration, constraints, statuses | [FR-04](05-functional-requirements.md#fr-04) |
-| 2 | Care Plan Agent | Sắp thứ tự và gán slot / Sequences and allocates slots | Gọi `allocate_slot()` trên capacity model / Calls `allocate_slot()` on the capacity model | [FR-04](05-functional-requirements.md#fr-04), [FR-08](05-functional-requirements.md#fr-08) |
+| 2 | Care Plan Agent | Sắp thứ tự và gán slot / Sequences and allocates slots | Ưu tiên trạm hàng đợi ngắn trong giới hạn phụ thuộc, đánh dấu trạm độc lập là song song, rồi gọi `allocate_slot()` trên capacity model / Prefers shorter-queue stations within dependency limits, flags independent stations parallel-eligible, then calls `allocate_slot()` | [FR-04](05-functional-requirements.md#fr-04), [FR-08](05-functional-requirements.md#fr-08), [FR-23](05-functional-requirements.md#fr-23) |
 | 3 | system (proceed gate) | Kiểm tra cờ thanh toán / Checks the paid flag | Task `UNPAID` -> `LOCKED`, không vào hàng đợi, không tính vào tải / `UNPAID` tasks are locked, excluded from queue and load | [FR-05](05-functional-requirements.md#fr-05) |
 | 4 | role_patient | Đi thanh toán ngoài app / Pays outside the app | App KHÔNG xử lý tiền; nguồn ủy quyền đánh dấu -> cờ `PAID` -> mở khóa, vào hàng đợi / the app handles no money; an authorised source flips the flag -> unlock, enqueue | [FR-05](05-functional-requirements.md#fr-05) |
 | 5 | Journey Agent | Hộ tống, so ETA liên tục / Escorts, compares ETA continuously | Đề xuất hoán đổi thứ tự trong giới hạn phụ thuộc; thông báo lý do / Proposes reordering within dependency limits; explains | [FR-06](05-functional-requirements.md#fr-06) |
