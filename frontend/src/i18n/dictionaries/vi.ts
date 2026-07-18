@@ -41,6 +41,9 @@ const vi = {
 
   'ai.badge': 'Đề xuất bởi AI',
 
+  'streamingText.label': 'Suy luận AI',
+  'streamingText.thinking': 'Đang suy luận...',
+
   'state.loading': 'Đang tải...',
   'state.empty': 'Chưa có dữ liệu',
   'state.error': 'Đã xảy ra lỗi. Vui lòng thử lại.',
@@ -242,6 +245,32 @@ const vi = {
   'console.screen.tasks.title': 'Màn task kỹ thuật viên',
   'console.screen.dashboard.title': 'Dashboard điều phối',
   'console.screen.audit.title': 'Console quản trị và audit',
+
+  // --- /dashboard (SCR-06, TASK-027) ---
+  'console.dashboard.loadingLabel': 'Đang tải dashboard điều phối...',
+  'console.dashboard.error.title': 'Điều phối tự động tạm dừng',
+  'console.dashboard.error.body':
+    'Lộ trình hiện tại được giữ nguyên. Không có gì được tự động áp dụng - vui lòng xem xét thủ công hoặc thử lại.',
+  'console.dashboard.heatmap.title': 'Bản đồ tải',
+  'console.dashboard.heatmap.caption': 'Tải theo khu vực và khung giờ',
+  'console.dashboard.heatmap.level.1': 'Thấp',
+  'console.dashboard.heatmap.level.2': 'Thấp',
+  'console.dashboard.heatmap.level.3': 'Trung bình',
+  'console.dashboard.heatmap.level.4': 'Trung bình',
+  'console.dashboard.heatmap.level.5': 'Cao',
+  'console.dashboard.heatmap.level.6': 'Cao',
+  'console.dashboard.approvalQueue.title': 'Hàng chờ duyệt',
+  'console.dashboard.approvalQueue.emptyMessage': 'Hiện không có đề xuất re-plan nào chờ duyệt.',
+  'console.dashboard.approvalQueue.aiProposalChip': 'Đề xuất re-plan bởi AI',
+  'console.dashboard.approvalQueue.blastRadiusLabel': 'Phạm vi ảnh hưởng (số bệnh nhân)',
+  'console.dashboard.approvalQueue.optionsLabel': 'Phương án',
+  'console.dashboard.approvalQueue.approve': 'Duyệt',
+  'console.dashboard.approvalQueue.reject': 'Từ chối',
+  'console.dashboard.approvalQueue.confirmRejectPrompt': 'Từ chối đề xuất ảnh hưởng lớn này?',
+  'console.dashboard.approvalQueue.confirmRejectYes': 'Xác nhận từ chối',
+  'console.dashboard.approvalQueue.confirmRejectNo': 'Hủy',
+  'console.dashboard.approvalQueue.actionError': 'Không ghi được quyết định. Vui lòng thử lại.',
+  'console.dashboard.reasoning.title': 'Suy luận của Disruption Agent',
 } as const;
 
 export default vi;

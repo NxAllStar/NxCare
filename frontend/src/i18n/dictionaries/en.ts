@@ -42,6 +42,9 @@ const en = {
 
   'ai.badge': 'AI-suggested',
 
+  'streamingText.label': 'AI reasoning',
+  'streamingText.thinking': 'Thinking...',
+
   'state.loading': 'Loading...',
   'state.empty': 'Nothing here yet',
   'state.error': 'Something went wrong. Please try again.',
@@ -243,6 +246,32 @@ const en = {
   'console.screen.tasks.title': 'Technician task view',
   'console.screen.dashboard.title': 'Coordinator dashboard',
   'console.screen.audit.title': 'Admin and audit console',
+
+  // --- /dashboard (SCR-06, TASK-027) ---
+  'console.dashboard.loadingLabel': 'Loading the coordinator dashboard...',
+  'console.dashboard.error.title': 'Auto-coordination paused',
+  'console.dashboard.error.body':
+    'The current plan is held. Nothing is being applied automatically - review manually or retry.',
+  'console.dashboard.heatmap.title': 'Load heatmap',
+  'console.dashboard.heatmap.caption': 'Load by area and time slot',
+  'console.dashboard.heatmap.level.1': 'Low',
+  'console.dashboard.heatmap.level.2': 'Low',
+  'console.dashboard.heatmap.level.3': 'Medium',
+  'console.dashboard.heatmap.level.4': 'Medium',
+  'console.dashboard.heatmap.level.5': 'High',
+  'console.dashboard.heatmap.level.6': 'High',
+  'console.dashboard.approvalQueue.title': 'Approval queue',
+  'console.dashboard.approvalQueue.emptyMessage': 'No re-plan proposals pending approval.',
+  'console.dashboard.approvalQueue.aiProposalChip': 'AI re-plan proposal',
+  'console.dashboard.approvalQueue.blastRadiusLabel': 'Blast radius (patients affected)',
+  'console.dashboard.approvalQueue.optionsLabel': 'Options',
+  'console.dashboard.approvalQueue.approve': 'Approve',
+  'console.dashboard.approvalQueue.reject': 'Reject',
+  'console.dashboard.approvalQueue.confirmRejectPrompt': 'Reject this large-impact re-plan proposal?',
+  'console.dashboard.approvalQueue.confirmRejectYes': 'Confirm reject',
+  'console.dashboard.approvalQueue.confirmRejectNo': 'Cancel',
+  'console.dashboard.approvalQueue.actionError': 'Could not record the decision. Please try again.',
+  'console.dashboard.reasoning.title': 'Disruption Agent reasoning',
 } satisfies Record<DictKey, string>;
 
 export default en;
