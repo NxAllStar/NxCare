@@ -20,6 +20,10 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5",
 ]
+sql = [
+    "asyncpg>=0.29",
+    "sqlalchemy[asyncio]>=2.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

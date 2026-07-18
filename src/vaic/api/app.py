@@ -38,8 +38,8 @@ def create_app() -> FastAPI:
     seed_demo_resources(repo)
     app.include_router(build_intake_router(repo))
 
-    @app.get("/healthz")
-    def healthz() -> dict[str, str]:
+    @app.get("/health")
+    def health() -> dict[str, str]:
         return {"status": "ok"}
 
     return app
