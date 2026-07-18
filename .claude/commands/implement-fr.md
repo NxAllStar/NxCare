@@ -41,6 +41,7 @@ implement. Do not guess.
    user-visible flow. The test names the acceptance criterion it proves and fails before the
    implementation exists.
 6. Comply with `.claude/rules/`. The change is a proposal: a human reviews and decides.
-7. Run `/test`, then `/review-changes`.
+7. Run `/test`. `/review-changes` (code-reviewer + security-reviewer) is no longer mandatory here -
+   run it only if explicitly requested.
 8. Do not deploy. Append the session-log rows to the task file and report which acceptance
    criteria are now met and which are not.

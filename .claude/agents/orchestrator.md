@@ -74,9 +74,10 @@ yourself. **Do not take "done" on faith.** An agent's "done" / "passed" / "merge
 against git and the task file, never a fact. Verify against `git diff` and `git log`, not against the
 agent's summary - status reports can reference branches or work that do not exist.
 
-Quality gates, in order: `qa-test` (green) → `code-reviewer` + `security-reviewer` in parallel →
-`/secret-scan` → PR. Never skip a gate. Report a gate as passed ONLY when the task file's
-session log records the run; an unlogged "reviewed" is unverified.
+Quality gates, in order: `qa-test` (green) → `/secret-scan` → PR. Never skip a gate. Report a gate
+as passed ONLY when the task file's session log records the run; an unlogged "reviewed" is
+unverified. `code-reviewer` + `security-reviewer` are not part of this mandatory sequence -
+dispatch them only when explicitly requested; they remain the read-only gate for `/review-changes`.
 
 Failures go back to the same agent with specific feedback. Repeated failure: reassign or escalate.
 
