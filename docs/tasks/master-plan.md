@@ -64,7 +64,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-035 | Link Appointment to owner/slot so the intake capacity guard checks real bookings, not just the owner Task queue (from TASK-007 review B1) | data-modeler | TASK-003, TASK-007 | P2 | 2 | Planned |
 | TASK-036 | Bind intake staff_confirmed/emergency_suspected to the authenticated session + stored triage result instead of caller-supplied booleans (from TASK-007 review B2) | agent-core-dev | TASK-013, TASK-007, TASK-034 | P2 | 2 | Planned |
 | TASK-037 | Guard Action.reasoning free-text field against PII leakage into the audit log (from TASK-007 review, reasoning-PII) | agent-core-dev | TASK-004, TASK-007 | P2 | 2 | Planned |
-| TASK-038 | Wire the patient app to the real Care Plan backend (GET /api/careplan/patient/{id}/active) - blocked on reconciling demo-string patient ids vs backend UUIDs before FE code changes | frontend-ui-dev | TASK-027, TASK-013 | P1 | 2 | Planned |
+| TASK-038 | Wire the patient app to the real Care Plan backend (GET /api/careplan/patient/{id}/active) - blocked on reconciling demo-string patient ids vs backend UUIDs before FE code changes | frontend-ui-dev | TASK-027, TASK-013 | P1 | 2 | Active |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 

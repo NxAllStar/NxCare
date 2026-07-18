@@ -18,10 +18,13 @@ endpoint's scope.
 
 from __future__ import annotations
 
+import asyncio
+import json
 from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
 
 from ..agents.careplan.care_plan import (
@@ -56,11 +59,42 @@ from ..models import (
 from ..state import Repository
 from ..tools import AuditLog, ConstraintChecker, ToolRegistry
 from .demo_state import DEMO_CAREPLAN_STATIONS
+from .events import CarePlanEventBus
 
 # Same fixed reference date the intake booking path uses (agents/intake/agent.py) - a proposed
 # route's `start` here lines up with the demo's other fixed-day slots.
 _BOOKING_REFERENCE_DATE = datetime(2026, 1, 1, tzinfo=UTC)
 _DEMO_HOURS = [9, 10, 11, 13, 14]
+
+# How long the SSE generator waits on the queue before emitting a comment heartbeat. A periodic
+# byte keeps intermediary proxies (and the browser's EventSource) from closing an idle connection;
+# it is a `:`-prefixed comment line, which SSE clients ignore.
+_SSE_HEARTBEAT_SECONDS = 15.0
+
+
+async def _sse_stream(
+    bus: CarePlanEventBus, patient_id: UUID, heartbeat: float = _SSE_HEARTBEAT_SECONDS
+):
+    """SSE frames for one patient: a `: connected` comment, then a `data:` line per published event,
+    with a `: keep-alive` comment whenever `heartbeat` seconds pass idle.
+
+    Module-level (not nested in the route) so it is unit-testable by driving `__anext__` directly -
+    an infinite generator cannot be exercised through the sync TestClient without hanging. The route
+    just wraps it in a `StreamingResponse`.
+    """
+    queue = bus.subscribe(patient_id)
+    try:
+        # An initial comment flushes headers so the client's connection opens promptly.
+        yield ": connected\n\n"
+        while True:
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=heartbeat)
+                yield f"data: {json.dumps(event)}\n\n"
+            except TimeoutError:
+                yield ": keep-alive\n\n"
+    finally:
+        # Runs on client disconnect (GeneratorExit) too - never leak a dead subscriber.
+        bus.unsubscribe(patient_id, queue)
 
 
 class CarePlanGenerateRequest(BaseModel):
@@ -129,7 +163,7 @@ def _build_executor(repo: Repository) -> ActionExecutor:
     return ActionExecutor(repo, registry, ConstraintChecker(repo), audit)
 
 
-def build_careplan_router(repo: Repository) -> APIRouter:
+def build_careplan_router(repo: Repository, bus: CarePlanEventBus | None = None) -> APIRouter:
     """Bind the demo `Repository` into the router's closure - one repo instance per running app.
 
     A fresh `APIRouter()` per call, never a module-level singleton: a module-level router would
@@ -138,6 +172,10 @@ def build_careplan_router(repo: Repository) -> APIRouter:
     at import time - merely IMPORTING this module anywhere already registers one such handler.
     Route-level tests that build a second, independent router (their own isolated repo) would then
     silently hit the first-registered handler's repo instead of their own.
+
+    `bus` is optional: when omitted (route-level unit tests, the standalone demo script) `/generate`
+    still works and `/stream` reports the stream is disabled. The running app always passes one so a
+    generated plan pushes a live "refresh" to that patient's open screen (TASK-038 real-time).
     """
     router = APIRouter(prefix="/api/careplan", tags=["careplan"])
 
@@ -218,6 +256,15 @@ def build_careplan_router(repo: Repository) -> APIRouter:
                 )
             )
 
+        # Push a "refresh now" hint to that patient's open screen(s), if any. The event carries no
+        # clinical data - the client refetches `/active` under its own auth scope - so a misdelivery
+        # could never leak another patient's plan (NFR-SEC-05); it is keyed to this patient only.
+        if bus is not None:
+            bus.publish(
+                body.patient_id,
+                {"type": "careplan.updated", "carePlanId": str(result.care_plan.id)},
+            )
+
         return CarePlanGenerateResponse(
             carePlanId=str(result.care_plan.id),
             status=result.care_plan.status.value,
@@ -268,6 +315,24 @@ def build_careplan_router(repo: Repository) -> APIRouter:
 
         return ActiveCarePlanResponse(
             carePlanId=str(plan.id), status=plan.status.value, tasks=task_out
+        )
+
+    @router.get("/patient/{patient_id}/stream")
+    async def stream_care_plan_events(patient_id: UUID) -> StreamingResponse:
+        """Server-Sent Events for one patient: pushes a `careplan.updated` event whenever a plan is
+        (re)generated for them, so the patient screen refetches `/active` immediately instead of
+        polling. One long-lived `GET`; the browser's `EventSource` auto-reconnects if it drops.
+
+        Read-only and single-patient: a connection only ever hears its own `patient_id`'s events
+        (the bus is keyed by it), and the events carry no clinical payload.
+        """
+        if bus is None:
+            raise HTTPException(503, detail="event stream not enabled on this app instance")
+
+        return StreamingResponse(
+            _sse_stream(bus, patient_id),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
     return router

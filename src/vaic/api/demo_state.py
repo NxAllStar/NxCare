@@ -20,7 +20,7 @@ import os
 from uuid import UUID
 
 from ..config import get_settings
-from ..models import Resource, ResourceType, ServiceType
+from ..models import Appointment, Patient, Resource, ResourceType, ServiceType
 from ..state import InMemoryRepository, Repository
 from ..state.redis_store import RedisRepository
 
@@ -38,6 +38,37 @@ DEMO_CAREPLAN_STATIONS = (
     UUID("00000000-0000-0000-0000-000000000011"),
     UUID("00000000-0000-0000-0000-000000000012"),
     UUID("00000000-0000-0000-0000-000000000013"),
+)
+
+# Fixed demo patients keyed by the scannable `patient_code` that BOTH the staff console and the
+# patient app address a person by (TASK-038). Stable Patient/Appointment UUIDs keep the seed
+# idempotent across restarts (Redis) and let the two surfaces resolve to the SAME id, which is the
+# whole point: a doctor's order on the console and the patient's own screen must be one patient.
+# Synthetic personas only - no real patient data (agent-guardrails.md). These mirror the console's
+# seed (`frontend/src/console/dashboard/clinicalStore.ts`).
+# (patient_code, full_name, patient_id, appointment_id)
+DEMO_PATIENTS = (
+    ("BN-941207", "Nguyen Thi Lan", UUID("00000000-0000-0000-0000-0000000000a1"),
+     UUID("00000000-0000-0000-0000-0000000000b1")),
+    ("BN-880214", "Le Hoang Nam", UUID("00000000-0000-0000-0000-0000000000a2"),
+     UUID("00000000-0000-0000-0000-0000000000b2")),
+    ("BN-921105", "Tran Minh Quan", UUID("00000000-0000-0000-0000-0000000000a3"),
+     UUID("00000000-0000-0000-0000-0000000000b3")),
+)
+
+# Fallback ServiceType catalog for a self-contained run with NO Postgres attached, so
+# `/api/careplan/generate` can resolve the console's test names (`resolve_service_types` matches on
+# code or display_label). Postgres stays the source of truth when configured
+# (`sync_service_types_from_postgres`); this only fills codes Postgres did not already provide.
+# Labels match the console's SERVICE_CATALOG (`ConsultOrdersScreen.tsx`) exactly, with diacritics.
+# (code, display_label, requires_fasting, turnaround_minutes, default_duration_min)
+DEMO_SERVICE_CATALOG = (
+    ("BLOOD_TEST", "Xét nghiệm máu", True, 45, 10),
+    ("XRAY_CHEST", "X-quang ngực", False, 15, 15),
+    ("CT_CHEST", "CT ngực", False, 30, 20),
+    ("ULTRASOUND_ABDOMEN", "Siêu âm bụng", True, 0, 20),
+    ("XRAY_ABDOMEN", "Chụp X-quang bụng", False, 15, 15),
+    ("ENDOSCOPY_GASTRIC", "Nội soi dạ dày", True, 60, 30),
 )
 
 
@@ -79,6 +110,43 @@ def seed_demo_careplan_stations(repo: Repository) -> None:
             capacity_per_hour=4,
         )
         repo.save(resource)
+
+
+def seed_demo_patients(repo: Repository) -> None:
+    """Idempotent, same pattern as `seed_demo_resources`: fixed ids never duplicate on restart.
+
+    Each patient gets one demo `Appointment`, since `/api/careplan/generate` requires an
+    `appointment_id` before it will accept a doctor's orders. `/api/patients/resolve` mints these
+    on demand too, for any patient_code not seeded here; seeding the known personas just keeps their
+    ids stable across restarts so the console and the patient app agree without a first round-trip.
+    """
+    for code, full_name, patient_id, appointment_id in DEMO_PATIENTS:
+        if repo.get(Patient, patient_id) is None:
+            repo.save(Patient(id=patient_id, full_name=full_name, patient_code=code))
+        if repo.get(Appointment, appointment_id) is None:
+            repo.save(Appointment(id=appointment_id, patient_id=patient_id, specialty="general"))
+
+
+def seed_demo_service_catalog(repo: Repository) -> None:
+    """Fill any ServiceType `code` Postgres did not already supply (idempotent by code).
+
+    Skips a code that already resolves - so when `sync_service_types_from_postgres` ran first and
+    provided the real config rows, this adds nothing and Postgres stays the source of truth. On a
+    plain local run with no database, this is the only catalog, and it is what lets a doctor's test
+    list resolve at all.
+    """
+    for code, display_label, requires_fasting, turnaround, duration in DEMO_SERVICE_CATALOG:
+        if repo.list(ServiceType, code=code):
+            continue
+        repo.save(
+            ServiceType(
+                code=code,
+                display_label=display_label,
+                requires_fasting=requires_fasting,
+                turnaround_minutes=turnaround,
+                default_duration_min=duration,
+            )
+        )
 
 
 def sync_service_types_from_postgres(repo: Repository) -> int:

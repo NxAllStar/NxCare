@@ -1,6 +1,6 @@
 ---
 title: "TASK-038: Wire the patient app to the real Care Plan backend"
-status: Planned
+status: Active
 fr: FR-04
 owner: frontend-ui-dev
 deps: TASK-027, TASK-013
@@ -75,6 +75,7 @@ patient screen without a manual fixture edit.
 | Date | Who | What was done | Result |
 |------|-----|---------------|--------|
 | 2026-07-18 | claude (session) | Added `GET /api/careplan/patient/{patient_id}/active` (careplan_routes.py) + tests; added standalone `scripts/demo_careplan_flow.py` proving the doctor-order -> route-proposal flow end to end; discovered the patient-id UUID/demo-string mismatch blocking FE wiring and filed this task instead of forcing a unilateral fix | Backend read endpoint done (182/182 tests pass); FE wiring intentionally left for a scoped decision |
+| 2026-07-19 | claude (session) | Owner decisions taken: real-time via SSE push; identity via backend mint/lookup; doctor "website" is the existing staff console (built on `origin/frontend`). Phase 1 backend seam implemented: `POST /api/patients/resolve` (mint-or-lookup Patient by patient_code + ensure demo Appointment); `CarePlanEventBus` (in-process pub/sub, threadsafe via loop.call_soon_threadsafe) in `api/events.py`; SSE `GET /api/careplan/patient/{id}/stream`; `/generate` publishes `careplan.updated` keyed to patient_id; `demo_state.py` seeds Patients/Appointments + a ServiceType catalog matching the console's Vietnamese labels; `app.py` wires bus via lifespan + mounts patient router. Added tests (test_events, test_patient_routes, test_careplan_events). Live end-to-end verified with uvicorn+curl: resolve -> generate -> SSE pushed `careplan.updated` -> /active shows tasks. | Phase 1 done: 198/198 pytest pass, ruff clean (1 pre-existing E501 in intake_routes:12, untouched). Phase 2 (patient app: login resolve, repoint patient.ts, JourneyPage EventSource) and Phase 3 (console handleSignOrders -> /generate) remain; both need the console+backend on one integration branch. |
 
 ## Result
 
