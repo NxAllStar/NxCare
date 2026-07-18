@@ -17,6 +17,11 @@ export default mergeConfig(
       // workaround during `npm install` on this machine (see TASK-021
       // session log) - not part of the app, must never be scanned for tests.
       exclude: ['e2e/**', 'node_modules/**', 'node_modules.orig-rootowned/**'],
+      server: {
+        deps: {
+          inline: ['html-encoding-sniffer', '@exodus/bytes'],
+        },
+      },
     },
     resolve: {
       alias: {

@@ -1,4 +1,4 @@
-"""Async CRUD over the PostgreSQL durable store (OI-15), one repository for all 15 entities.
+"""Async CRUD over the PostgreSQL durable store (OI-15), one repository for all 17 entities.
 
 `AsyncPostgresRepository` is the async counterpart of `vaic.state.Repository` - same four
 operations (save/get/list/delete), same entity types, but backed by an `AsyncSession` instead of
@@ -23,12 +23,14 @@ from ...models.entities import Appointment as AppointmentEntity
 from ...models.entities import (
     AuditLogEntry,
     CarePlan,
+    Department,
     Diagnosis,
     DisruptionEvent,
     IntakeSession,
     Notification,
     Patient,
     Payment,
+    QueueTicket,
     Resource,
     ScanEvent,
     ServiceOrder,
@@ -54,11 +56,13 @@ _ROW_FOR: dict[type[_Base], type[orm.Base]] = {
     Task: orm.TaskRow,
     Slot: orm.SlotRow,
     Payment: orm.PaymentRow,
+    Department: orm.DepartmentRow,
     Resource: orm.ResourceRow,
     DisruptionEvent: orm.DisruptionEventRow,
     Notification: orm.NotificationRow,
     AuditLogEntry: orm.AuditLogEntryRow,
     ScanEvent: orm.ScanEventRow,
+    QueueTicket: orm.QueueTicketRow,
 }
 
 
@@ -74,7 +78,7 @@ def _to_entity(model_cls: type[T], row: orm.Base) -> T:
 
 
 class AsyncPostgresRepository:
-    """CRUD over the 15 entities in `ENTITIES`, keyed by entity type and id, via `AsyncSession`."""
+    """CRUD over the 17 entities in `ENTITIES`, keyed by entity type and id, via `AsyncSession`."""
 
     def __init__(self, sessionmaker: async_sessionmaker[AsyncSession] | None = None) -> None:
         self._sessionmaker = sessionmaker or _default_sessionmaker()

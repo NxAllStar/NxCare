@@ -7,6 +7,8 @@ export { AIChip } from './AIChip';
 export { StatusChip, type StatusCode } from './StatusChip';
 export { LanguageToggle } from './LanguageToggle';
 export { PatientCodeQr } from './PatientCodeQr';
+export { Heatmap, type HeatLevel, type HeatmapCellData, type HeatmapProps } from './Heatmap';
+export { StreamingText } from './StreamingText';
 export * from './ScreenState';
 
 export { Button, buttonVariants, type ButtonProps } from './Button';

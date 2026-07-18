@@ -27,96 +27,114 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
   :root {
     /* --- shadcn core (HSL triplets, no hsl() wrapper) --- */
-    --background: 210 11% 93%;        /* #EDEEF0 app canvas */
-    --foreground: 210 16% 9%;         /* #12151A text */
+    --background: 80 15% 96%;         /* #F6F7F4 warm clinical light canvas */
+    --foreground: 153 21% 10%;        /* #152019 deep forest green text */
 
-    --card: 0 0% 100%;                /* #FFFFFF */
-    --card-foreground: 210 16% 9%;
+    --card: 0 0% 100%;                /* #FFFFFF card */
+    --card-foreground: 153 21% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 16% 9%;
+    --popover-foreground: 153 21% 10%;
 
-    --primary: 193 82% 31%;           /* #0E7490 trustworthy teal/blue */
+    --primary: 193 82% 31%;           /* #0E7490 NxCare sky blue - brand primary (component.buttonPrimary/fab in design-tokens.json) */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 97%;         /* #F7F8F9 muted surface */
-    --secondary-foreground: 210 16% 9%;
+    --secondary: 80 15% 98%;          /* #FAFBF9 warm soft clinical secondary */
+    --secondary-foreground: 153 21% 10%;
 
-    --muted: 210 20% 97%;             /* #F7F8F9 */
-    --muted-foreground: 210 8% 39%;   /* #5A626B */
+    --muted: 80 10% 93%;              /* #ECEDE9 */
+    --muted-foreground: 153 8% 42%;    /* #616C66 */
 
-    --accent: 193 82% 31%;
+    --accent: 193 82% 31%;            /* matches primary */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 358 76% 59%;       /* #E5484D red = disruption/blocked */
+    --destructive: 358 76% 59%;       /* #E5484D */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 14% 90%;            /* #E2E5E8 */
-    --input: 210 14% 90%;
-    --ring: 193 82% 31%;              /* focus ring = primary */
+    --border: 80 8% 90%;              /* #E6E8E2 warm clinical border */
+    --input: 80 8% 90%;
+    --ring: 193 82% 31%;              /* primary */
 
-    --radius: 1rem;                   /* 16px base; cards use --radius, pills 999px */
+    --radius: 0.75rem;                /* 12px clean corners */
 
-    /* --- Semantic status (recur everywhere) --- */
-    --success: 149 54% 40%;           /* #2F9D66 green = done/available */
+    /* --- Semantic status --- */
+    --success: 159 84% 34%;           /* #0E9F6E green = done */
     --success-foreground: 0 0% 100%;
-    --warning: 36 69% 51%;            /* #D9902B amber = waiting/pending */
+    --warning: 36 69% 51%;            /* #D9902B amber = waiting */
     --warning-foreground: 0 0% 100%;
-    --danger: 358 76% 59%;            /* #E5484D red = disruption/blocked */
+    --danger: 358 76% 59%;            /* #E5484D red = disruption */
     --danger-foreground: 0 0% 100%;
-    --info: 193 82% 31%;              /* #0E7490 blue = in-progress */
+    --info: 159 84% 34%;
     --info-foreground: 0 0% 100%;
 
     /* --- Sequential load heatmap (green → amber → red) --- */
-    --heat-1: 149 54% 40%;            /* #2F9D66 lowest load */
-    --heat-2: 92 34% 51%;             /* #6BAE55 */
-    --heat-3: 47 55% 51%;             /* #C7A93D */
-    --heat-4: 36 69% 51%;             /* #D9902B */
-    --heat-5: 18 70% 55%;             /* #DE6A3C */
-    --heat-6: 358 76% 59%;            /* #E5484D highest load */
+    --heat-1: 159 84% 34%;            /* #0E9F6E */
+    --heat-2: 92 34% 51%;
+    --heat-3: 47 55% 51%;
+    --heat-4: 36 69% 51%;
+    --heat-5: 18 70% 55%;
+    --heat-6: 358 76% 59%;
 
-    /* --- Neutral ramp (clinical greys) --- */
-    --neutral-50: 210 20% 97%;
-    --neutral-100: 210 11% 93%;
-    --neutral-200: 210 14% 90%;
-    --neutral-300: 208 11% 80%;
-    --neutral-400: 210 8% 64%;
-    --neutral-500: 210 8% 39%;
-    --neutral-900: 210 16% 9%;
+    /* --- Neutral ramp --- */
+    --neutral-50: 80 15% 98%;
+    --neutral-100: 80 15% 96%;
+    --neutral-200: 80 8% 90%;
+    --neutral-300: 153 10% 75%;
+    --neutral-400: 153 8% 55%;
+    --neutral-500: 153 8% 42%;
+    --neutral-900: 153 21% 10%;
   }
 
   .dark {
-    --background: 210 20% 5%;         /* #0B0D10 */
-    --foreground: 210 12% 95%;        /* #F2F3F4 */
+    --background: 153 20% 7%;         /* #0C0F0D very deep forest slate */
+    --foreground: 153 10% 92%;        /* #EAEDE9 soft green-grey */
 
-    --card: 210 13% 10%;             /* #15181C */
-    --card-foreground: 210 12% 95%;
+    --card: 153 15% 11%;              /* #171D1A */
+    --card-foreground: 153 10% 92%;
 
-    --popover: 210 13% 10%;
-    --popover-foreground: 210 12% 95%;
+    --popover: 153 15% 11%;
+    --popover-foreground: 153 10% 92%;
 
-    --primary: 193 60% 45%;
-    --primary-foreground: 210 20% 5%;
+    --primary: 193 78% 46%;           /* brighter sky blue for dark mode contrast */
+    --primary-foreground: 205 30% 9%;
 
-    --secondary: 213 12% 12%;        /* #1B1F24 */
-    --secondary-foreground: 210 12% 95%;
+    --secondary: 153 12% 13%;         /* #1C2320 */
+    --secondary-foreground: 153 10% 92%;
 
-    --muted: 213 12% 12%;
-    --muted-foreground: 210 8% 64%;
+    --muted: 153 12% 13%;
+    --muted-foreground: 153 8% 65%;
 
-    --accent: 193 60% 45%;
-    --accent-foreground: 210 20% 5%;
+    --accent: 193 78% 46%;
+    --accent-foreground: 205 30% 9%;
 
     --destructive: 358 66% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 12% 18%;           /* #2A2F35 */
-    --input: 210 12% 18%;
-    --ring: 193 60% 45%;
+    --border: 153 10% 19%;            /* #2B332F */
+    --input: 153 10% 19%;
+    --ring: 193 78% 46%;
+  }
+
+  /* Console (staff) surface accent - per frontend/design/*.png the web
+     console brands in NxCare blue while the patient app keeps the teal
+     primary. Scoped token override so call sites stay token-only
+     (frontend.md); applied on the console shell and login roots. */
+  .console-surface {
+    --primary: 221 83% 53%;           /* #2563EB console blue */
+    --primary-foreground: 0 0% 100%;
+    --accent: 221 83% 53%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 221 83% 53%;
+  }
+  .dark .console-surface {
+    --primary: 217 91% 60%;           /* #3B82F6 brighter for dark contrast */
+    --primary-foreground: 221 40% 11%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 221 40% 11%;
+    --ring: 217 91% 60%;
   }
 }
 
