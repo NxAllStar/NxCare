@@ -223,6 +223,26 @@ const en = {
   'prep.title': 'Pre-visit prep',
   'prep.emptyMessage': 'No reminders yet',
   'prep.notFound': 'No prep reminder found for this visit.',
+
+  // --- Hospital console (TASK-026, staff/coordinator screens) ---
+  'console.appName': 'VAIC - Hospital console',
+  'console.sidebar.navLabel': 'Main navigation',
+  'console.login.title': 'Staff login',
+  'console.login.subtitle': 'Pick a role below to log in (demo mode)',
+  'console.role.doctor': 'Doctor',
+  'console.role.technician': 'Technician',
+  'console.role.coordinator': 'Coordinator',
+  'console.role.admin': 'Admin',
+  'console.nav.consult': 'Consult and orders',
+  'console.nav.worklist': 'Doctor worklist',
+  'console.nav.tasks': 'Technician tasks',
+  'console.nav.dashboard': 'Coordinator dashboard',
+  'console.nav.audit': 'Admin and audit',
+  'console.screen.consult.title': 'Consult and orders',
+  'console.screen.worklist.title': 'Doctor worklist',
+  'console.screen.tasks.title': 'Technician task view',
+  'console.screen.dashboard.title': 'Coordinator dashboard',
+  'console.screen.audit.title': 'Admin and audit console',
 } satisfies Record<DictKey, string>;
 
 export default en;

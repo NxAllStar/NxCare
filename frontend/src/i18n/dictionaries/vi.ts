@@ -222,6 +222,26 @@ const vi = {
   'prep.title': 'Chuẩn bị trước buổi khám',
   'prep.emptyMessage': 'Chưa có nhắc nhở nào',
   'prep.notFound': 'Không tìm thấy nhắc nhở cho buổi khám này.',
+
+  // --- Hospital console (TASK-026, staff/coordinator screens) ---
+  'console.appName': 'VAIC - Console bệnh viện',
+  'console.sidebar.navLabel': 'Điều hướng chính',
+  'console.login.title': 'Đăng nhập nhân viên',
+  'console.login.subtitle': 'Chọn vai trò bên dưới để đăng nhập (chế độ demo)',
+  'console.role.doctor': 'Bác sĩ',
+  'console.role.technician': 'Kỹ thuật viên',
+  'console.role.coordinator': 'Điều phối viên',
+  'console.role.admin': 'Quản trị viên',
+  'console.nav.consult': 'Khám và chỉ định',
+  'console.nav.worklist': 'Worklist bác sĩ',
+  'console.nav.tasks': 'Task kỹ thuật viên',
+  'console.nav.dashboard': 'Dashboard điều phối',
+  'console.nav.audit': 'Quản trị và audit',
+  'console.screen.consult.title': 'Màn khám và chỉ định',
+  'console.screen.worklist.title': 'Worklist bác sĩ',
+  'console.screen.tasks.title': 'Màn task kỹ thuật viên',
+  'console.screen.dashboard.title': 'Dashboard điều phối',
+  'console.screen.audit.title': 'Console quản trị và audit',
 } as const;
 
 export default vi;

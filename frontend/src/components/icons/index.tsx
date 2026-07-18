@@ -229,3 +229,53 @@ export function PillIcon(props: IconProps) {
     </svg>
   );
 }
+
+/* --- Hospital console sidebar icons (TASK-026) --- */
+
+export function StethoscopeIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M7 4v6a4 4 0 0 0 8 0V4" />
+      <path d="M11 14v2a5 5 0 0 0 10 0v-2" />
+      <circle cx="21" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function ClipboardListIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="5" y="4" width="14" height="17" rx="1.5" />
+      <path d="M9 3.5h6a1 1 0 0 1 1 1V6H8V4.5a1 1 0 0 1 1-1Z" />
+      <path d="M8.5 11h7M8.5 14.5h7M8.5 18h4" />
+    </svg>
+  );
+}
+
+export function WrenchIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M14.5 6.5a4 4 0 0 0-5.4 4.9L4 16.5V19h2.5l5.1-5.1a4 4 0 0 0 4.9-5.4l-2.6 2.6-2-2 2.6-2.6Z" />
+    </svg>
+  );
+}
+
+export function GridIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 3.5 19 6v5.5c0 5-3 8.3-7 9.5-4-1.2-7-4.5-7-9.5V6l7-2.5Z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
