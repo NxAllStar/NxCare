@@ -55,6 +55,8 @@ flowchart TD
 **Actor**: `role_patient` (see [06](06-access-control.md))
 **Serves**: [FR-01](05-functional-requirements.md#fr-01), [FR-02](05-functional-requirements.md#fr-02)
 **Entities shown**: `IntakeSession`, `Appointment` (see [08](08-data-model.md))
+**Related**: patient-app IA and feature detail behind this screen -
+[PRD-FR-12 patient mobile app](../requirements/PRD-FR-12-patient-mobile-app.md#31-screen-sitemap)
 
 ### Layout
 
@@ -105,6 +107,8 @@ flowchart TD
 **Actor**: `role_patient`
 **Serves**: [FR-04](05-functional-requirements.md#fr-04), [FR-05](05-functional-requirements.md#fr-05), [FR-06](05-functional-requirements.md#fr-06), [FR-11](05-functional-requirements.md#fr-11), [FR-15](05-functional-requirements.md#fr-15)
 **Entities shown**: `CarePlan`, `Task`, `Notification`, `Payment`
+**Related**: patient-app IA and feature detail behind this screen -
+[PRD-FR-12 patient mobile app](../requirements/PRD-FR-12-patient-mobile-app.md#5-user-flow)
 
 ### Layout
 
@@ -468,6 +472,10 @@ flowchart TD
 VI: Hướng thiết kế nhẹ để toàn app đọc như một sản phẩm thống nhất, phục vụ tiêu chí UX (15 điểm).
 
 EN: A lightweight design system so the whole app reads as one product, serving the UX criterion.
+
+Patient-surface nuance (register, colour, typography, one-handed use) is elaborated in
+[PRD-FR-12 patient mobile app, section 6](../requirements/PRD-FR-12-patient-mobile-app.md#6-technical-constraints);
+this section remains the app-wide contract and governs where the two differ.
 
 | Aspect | Direction |
 |--------|-----------|
