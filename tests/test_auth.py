@@ -30,7 +30,17 @@ from vaic.auth import (
     resolve_scope,
     seed_demo_accounts,
 )
-from vaic.models import Appointment, CarePlan, Payment, Task
+from vaic.models import (
+    Appointment,
+    AuditLogEntry,
+    CarePlan,
+    Diagnosis,
+    Payment,
+    PaymentSubjectType,
+    ServiceOrder,
+    Slot,
+    Task,
+)
 from vaic.state import InMemoryRepository
 
 _FIXED_NOW = datetime(2026, 1, 1, tzinfo=UTC)
@@ -151,6 +161,60 @@ def test_patient_resolves_only_their_own_task_via_one_hop_care_plan_join():
     visible = list_scoped(repo, account, Task)
 
     assert [t.id for t in visible] == [my_task.id]
+
+
+# ---- TASK-016: denormalized patient_id resolves Own-scope on the previously fail-closed entities -
+
+def test_own_scope_resolves_via_denormalized_patient_id_on_diagnosis_service_order_slot_payment():
+    repo = InMemoryRepository()
+    mine, other = uuid4(), uuid4()
+    account = Account(username="p1", role=Role.PATIENT, patient_id=mine)
+
+    my_diagnosis = Diagnosis(patient_id=mine, appointment_id=uuid4(), diagnosed_by=uuid4())
+    other_diagnosis = Diagnosis(patient_id=other, appointment_id=uuid4(), diagnosed_by=uuid4())
+    my_order = ServiceOrder(
+        patient_id=mine, diagnosis_id=uuid4(), service_type_id=uuid4(), ordered_by=uuid4()
+    )
+    other_order = ServiceOrder(
+        patient_id=other, diagnosis_id=uuid4(), service_type_id=uuid4(), ordered_by=uuid4()
+    )
+    my_slot = Slot(patient_id=mine, task_id=uuid4(), owner_id=uuid4(), start=_FIXED_NOW)
+    other_slot = Slot(patient_id=other, task_id=uuid4(), owner_id=uuid4(), start=_FIXED_NOW)
+    my_payment = Payment(
+        patient_id=mine, subject_type=PaymentSubjectType.TASK, subject_id=uuid4()
+    )
+    other_payment = Payment(
+        patient_id=other, subject_type=PaymentSubjectType.TASK, subject_id=uuid4()
+    )
+
+    for mine_record, other_record in (
+        (my_diagnosis, other_diagnosis),
+        (my_order, other_order),
+        (my_slot, other_slot),
+        (my_payment, other_payment),
+    ):
+        assert is_own(repo, account, mine_record)
+        assert not is_own(repo, account, other_record)
+
+
+def test_own_scope_resolves_via_patient_id_on_audit_log_entry_when_set():
+    repo = InMemoryRepository()
+    mine, other = uuid4(), uuid4()
+    account = Account(username="p1", role=Role.PATIENT, patient_id=mine)
+
+    mine_entry = AuditLogEntry(actor="Journey Agent", action="notify", patient_id=mine)
+    other_entry = AuditLogEntry(actor="Journey Agent", action="notify", patient_id=other)
+
+    assert is_own(repo, account, mine_entry)
+    assert not is_own(repo, account, other_entry)
+
+
+def test_audit_log_entry_with_no_patient_id_fails_closed_for_own_scope():
+    repo = InMemoryRepository()
+    account = Account(username="p1", role=Role.PATIENT, patient_id=uuid4())
+    entry = AuditLogEntry(actor="agent-core", action="BLOCKED:drop_database")
+
+    assert not is_own(repo, account, entry)
 
 
 def test_scope_filtering_is_applied_by_the_data_layer_not_the_caller():
