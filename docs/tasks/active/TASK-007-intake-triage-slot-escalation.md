@@ -1,6 +1,6 @@
 ---
 title: "TASK-007: Intake triage + slot recommendation + emergency escalation"
-status: Planned
+status: Active
 fr: "FR-01, FR-02, BF-05"
 owner: intake-dev
 deps: "TASK-004, TASK-005"
@@ -54,6 +54,7 @@ escalates emergencies out of the normal flow.
 | Date | Who | What was done | Result |
 |------|-----|---------------|--------|
 | 2026-07-18 | orchestrator | Created task file from template so the Intake lane can claim it | Planned |
+| 2026-07-18 | Vuong (intake-dev) | Claimed task; verified deps TASK-004, TASK-005 Done and their code present; branch feat/TASK-007-intake-triage-slot-escalation off cnv-dev | Active |
 
 ## Result
 
