@@ -1,21 +1,24 @@
-"""baseline schema from ORM metadata
+"""baseline schema (original 15 entities, pre ADR-003)
 
 Revision ID: a3a9a1c7715a
 Revises:
 Create Date: 2026-07-18 21:35:02.958239
 
-Baseline snapshot of the current 17-entity schema (see src/vaic/state/sql/models.py,
-which mirrors docs/specs/08-data-model.md column-for-column). It replaces the previous
-`Base.metadata.create_all` bootstrap as the schema-creation path for a fresh database.
+Frozen baseline of the ORIGINAL 15-entity schema, as it existed before ADR-003. It is
+"frozen" on purpose: it builds a fresh MetaData holding only the 15 pre-ADR-003 tables and
+strips `Appointment.owner_id`, so it stays a fixed point-in-time snapshot even though the live
+ORM models (`src/vaic/state/sql/models.py`) have since grown to 17 entities. ADR-003's
+`Department`, `QueueTicket`, and `Appointment.owner_id` land in the follow-on delta revision,
+not here.
 
-This first revision creates the schema straight from the ORM metadata - the single source
-of truth - so the baseline can never drift from the models. It includes ADR-003's `Department`
-and `QueueTicket` entities and `Appointment.owner_id`: those landed while this baseline had not
-yet been applied to any database, so they belong in the initial snapshot rather than a delta.
+Adopting Alembic on the existing database (which already holds these 15 tables): stamp this
+revision without running it -
 
-From the first `alembic upgrade` against a real database onward, every *subsequent* schema
-change must be an explicit, reviewable migration, generated with
-`alembic revision --autogenerate` and hand-checked, not another metadata snapshot.
+    alembic stamp a3a9a1c7715a
+
+then `alembic upgrade head` applies only the ADR-003 delta. On a brand-new empty database,
+`alembic upgrade head` runs this baseline and then the delta, reproducing the full 17-entity
+schema.
 """
 from collections.abc import Sequence
 
@@ -27,19 +30,51 @@ down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
+# The 15 tables that existed before ADR-003. Frozen here so this baseline never drifts as the
+# live ORM metadata grows - later schema changes are explicit deltas, never a re-snapshot.
+_BASELINE_TABLES: tuple[str, ...] = (
+    "patients",
+    "resources",
+    "service_types",
+    "disruption_events",
+    "intake_sessions",
+    "appointments",
+    "diagnoses",
+    "service_orders",
+    "care_plans",
+    "tasks",
+    "slots",
+    "payments",
+    "notifications",
+    "audit_log_entries",
+    "scan_events",
+)
 
-def upgrade() -> None:
-    """Create every table (and its enum types) defined on the ORM metadata."""
-    # Imported inside the function, not at module top level: `alembic history`/`heads`/`show`
-    # load this file without running env.py (which puts ./src on sys.path), so a top-level
-    # `import vaic...` would break those commands.
+
+def _frozen_metadata():
+    """A MetaData holding only the 15 pre-ADR-003 tables, with `appointments.owner_id` stripped."""
+    from sqlalchemy import MetaData
+
     from vaic.state.sql.models import Base
 
-    Base.metadata.create_all(bind=op.get_bind())
+    frozen = MetaData()
+    for name in _BASELINE_TABLES:
+        table = Base.metadata.tables[name].to_metadata(frozen)
+        if name == "appointments" and "owner_id" in table.c:
+            # Drop the owner_id FK constraint first: removing the column alone leaves a dangling
+            # `FOREIGN KEY(owner_id)` in the emitted DDL. ColumnCollection membership is by name.
+            for constraint in list(table.constraints):
+                if "owner_id" in getattr(constraint, "columns", ()):
+                    table.constraints.discard(constraint)
+            table._columns.remove(table.c["owner_id"])  # ADR-003 column belongs to the delta
+    return frozen
+
+
+def upgrade() -> None:
+    """Create the original 15 tables (and their enum types)."""
+    _frozen_metadata().create_all(bind=op.get_bind())
 
 
 def downgrade() -> None:
-    """Drop every table (and its enum types) defined on the ORM metadata."""
-    from vaic.state.sql.models import Base
-
-    Base.metadata.drop_all(bind=op.get_bind())
+    """Drop the original 15 tables (and their enum types)."""
+    _frozen_metadata().drop_all(bind=op.get_bind())
