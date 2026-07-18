@@ -26,7 +26,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from ...models import Diagnosis, ServiceOrder, ServiceType
+from ...models import Appointment, Diagnosis, ServiceOrder, ServiceType
 from ...state import Repository
 from ...tools import Action, ActionResult, Tool, ToolError
 from ..core.executor import ActionExecutor
@@ -51,8 +51,12 @@ class CreateServiceOrderIn(BaseModel):
 def _create_diagnosis(params: CreateDiagnosisIn, repo: Repository) -> dict:
     if params.actor_role != DOCTOR_ROLE:  # BR-05 / CO-02
         raise ToolError(f"only {DOCTOR_ROLE} may create a diagnosis - BR-05")
+    appointment = repo.get(Appointment, params.appointment_id)
+    if appointment is None:
+        raise ToolError("appointment_id does not reference a recorded Appointment")
     diagnosis = repo.save(
         Diagnosis(
+            patient_id=appointment.patient_id,  # denormalized from Appointment (TASK-016)
             appointment_id=params.appointment_id,
             conditions=list(params.conditions),
             diagnosed_by=params.diagnosed_by,
@@ -73,6 +77,7 @@ def _create_service_order(params: CreateServiceOrderIn, repo: Repository) -> dic
         raise ToolError("diagnosis_id does not reference a recorded Diagnosis")
     order = repo.save(
         ServiceOrder(
+            patient_id=diagnosis.patient_id,  # denormalized from Diagnosis (TASK-016)
             diagnosis_id=params.diagnosis_id,
             service_type_id=params.service_type_id,
             ordered_by=params.ordered_by,

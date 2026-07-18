@@ -29,6 +29,7 @@ from pydantic import BaseModel
 
 from ...models import (
     TASK_TRANSITIONS,
+    CarePlan,
     ExecutionStatus,
     InvalidTransition,
     Payment,
@@ -90,9 +91,18 @@ def build_confirm_payment_tool(
         existing = repo.list(
             Payment, subject_type=PaymentSubjectType.TASK, subject_id=params.task_id
         )
-        payment = existing[0] if existing else Payment(
-            subject_type=PaymentSubjectType.TASK, subject_id=params.task_id
-        )
+        if existing:
+            payment = existing[0]
+        else:
+            care_plan = repo.get(CarePlan, task.care_plan_id)
+            if care_plan is None:
+                raise ToolError("task references an unknown care plan")
+            payment = Payment(
+                # denormalized since subject_id is polymorphic (TASK-016)
+                patient_id=care_plan.patient_id,
+                subject_type=PaymentSubjectType.TASK,
+                subject_id=params.task_id,
+            )
         payment.status = PaymentStatus.PAID
         payment.confirmed_by = params.confirmed_by
         payment.confirmed_at = _now()

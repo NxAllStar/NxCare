@@ -56,14 +56,16 @@ def _build(repo=None):
 
 def _order_and_type(repo, code: str, diagnosis_id, **type_kw):
     st = repo.save(ServiceType(code=code, display_label=code, **type_kw))
-    order = repo.save(ServiceOrder(diagnosis_id=diagnosis_id, service_type_id=st.id,
-                                    ordered_by=uuid4()))
+    order = repo.save(ServiceOrder(patient_id=uuid4(), diagnosis_id=diagnosis_id,
+                                    service_type_id=st.id, ordered_by=uuid4()))
     return order, st
 
 
 def test_generate_care_plan_creates_one_task_per_order_and_activates_the_plan():
     repo, executor, audit = _build()
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     room = repo.save(Resource(type=ResourceType.ROOM, department_id=uuid4(),
                                capacity_per_hour=5))
 
@@ -117,7 +119,9 @@ def test_generate_care_plan_creates_one_task_per_order_and_activates_the_plan():
 
 def test_generate_care_plan_never_adds_a_service_beyond_the_single_order():
     repo, executor, _ = _build()
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     room = repo.save(Resource(type=ResourceType.ROOM, department_id=uuid4(),
                                capacity_per_hour=5))
     ultra, ultra_st = _order_and_type(repo, "ULTRASOUND", diagnosis.id)
@@ -145,7 +149,9 @@ def test_cm4_owner_resolved_once_and_threaded_to_the_task():
     task assignment) would disagree between calls. This proves it is called exactly once per order
     and the SAME resolved owner both estimates the duration and owns the persisted Task."""
     repo, executor, _ = _build()
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     room_a = repo.save(Resource(type=ResourceType.ROOM, department_id=uuid4(),
                                  capacity_per_hour=5))
     room_b = repo.save(Resource(type=ResourceType.ROOM, department_id=uuid4(),
@@ -181,7 +187,9 @@ def test_cm4_owner_resolved_once_and_threaded_to_the_task():
 
 def test_cm5_empty_candidates_reports_failure_cleanly_no_orphan_active_plan():
     repo, executor, audit = _build()
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     room = repo.save(Resource(type=ResourceType.ROOM, department_id=uuid4(),
                                capacity_per_hour=5))
     ultra, ultra_st = _order_and_type(repo, "ULTRASOUND", diagnosis.id)
@@ -211,7 +219,9 @@ def test_cm5_empty_candidates_reports_failure_cleanly_no_orphan_active_plan():
 
 def test_cm6_sm1_plan_and_task_writes_are_routed_through_the_executor_and_audited():
     repo, executor, audit = _build()
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     room = repo.save(Resource(type=ResourceType.ROOM, department_id=uuid4(),
                                capacity_per_hour=5))
     ultra, ultra_st = _order_and_type(repo, "ULTRASOUND", diagnosis.id)

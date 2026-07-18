@@ -22,7 +22,7 @@ from vaic.agents.careplan import (
 from vaic.agents.careplan.care_plan import generate_care_plan
 from vaic.agents.careplan.slots import SlotCandidate, build_allocate_slot_tool
 from vaic.agents.core import ActionExecutor
-from vaic.models import Diagnosis, Resource, ResourceType, ServiceOrder, ServiceType
+from vaic.models import Appointment, Diagnosis, Resource, ResourceType, ServiceOrder, ServiceType
 from vaic.state import InMemoryRepository
 from vaic.tools import Action, AuditLog, ConstraintChecker, ToolRegistry
 
@@ -52,13 +52,13 @@ def test_ac_03_1_diagnosis_and_three_orders_recorded_and_triggers_care_plan():
     blood = _service_type(repo, code="BLOOD_TEST")
     ultrasound = _service_type(repo, code="ULTRASOUND")
     xray = _service_type(repo, code="XRAY")
-    appointment_id = uuid4()
+    appointment = repo.save(Appointment(patient_id=uuid4(), specialty="NOI_TONG_QUAT"))
     doctor_id = uuid4()
 
     result = capture_diagnosis_and_orders(
         executor,
         actor="role_doctor",
-        appointment_id=appointment_id,
+        appointment_id=appointment.id,
         conditions=["synthetic condition A"],
         diagnosed_by=doctor_id,
         actor_role="role_doctor",
@@ -98,7 +98,9 @@ def test_ac_03_1_diagnosis_and_three_orders_recorded_and_triggers_care_plan():
 def test_ac_03_2_non_doctor_actor_refused_and_audited():
     repo, executor, audit = _build()
     st = _service_type(repo)
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     before = len(audit.entries())
 
     result = executor.execute(
@@ -148,7 +150,9 @@ def test_ac_03_2_non_doctor_cannot_create_diagnosis_either():
 
 def test_service_order_requires_valid_service_type():
     repo, executor, _ = _build()
-    diagnosis = repo.save(Diagnosis(appointment_id=uuid4(), diagnosed_by=uuid4()))
+    diagnosis = repo.save(
+        Diagnosis(patient_id=uuid4(), appointment_id=uuid4(), diagnosed_by=uuid4())
+    )
     result = executor.execute(
         Action(
             tool="create_service_order",

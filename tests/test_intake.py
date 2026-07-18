@@ -26,12 +26,12 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
+
+from vaic.agents.core import ActionExecutor, Agent
 from vaic.agents.intake.agent import IntakeAgent, build_intake_registry
 from vaic.agents.intake.emergency import RED_FLAG_SIGNALS, detect_emergency
 from vaic.agents.intake.slots import SlotProposal, recommend_slots
 from vaic.agents.intake.triage import TriageResult, extract_triage
-
-from vaic.agents.core import ActionExecutor, Agent
 from vaic.forecast import ForecastLLMError
 from vaic.models import Appointment, AppointmentStatus, PriorityLevel, Resource, ResourceType
 from vaic.state import InMemoryRepository

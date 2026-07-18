@@ -46,7 +46,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from ...models import ExecutionStatus, Resource, Slot, Task
+from ...models import CarePlan, ExecutionStatus, Resource, Slot, Task
 from ...state import Repository
 from ...tools import Action, ActionResult, AuditLog, Tool, ToolError
 from ..core.executor import ActionExecutor
@@ -103,6 +103,9 @@ def _allocate_slot(params: AllocateSlotIn, repo: Repository) -> dict:
     task = repo.get(Task, params.task_id)
     if task is None:
         raise ToolError("unknown task")
+    care_plan = repo.get(CarePlan, task.care_plan_id)
+    if care_plan is None:
+        raise ToolError("task references an unknown care plan")
 
     end = params.start + timedelta(minutes=params.duration_min)
 
@@ -140,8 +143,10 @@ def _allocate_slot(params: AllocateSlotIn, repo: Repository) -> dict:
                     "double-book the owner"
                 )
 
-    slot = repo.save(Slot(task_id=params.task_id, owner_id=params.resource_id,
-                           start=params.start, end=end))
+    slot = repo.save(Slot(
+        patient_id=care_plan.patient_id,  # denormalized from Task/CarePlan (TASK-016)
+        task_id=params.task_id, owner_id=params.resource_id,
+        start=params.start, end=end))
     return {"slot_id": str(slot.id), "resource_id": str(params.resource_id)}
 
 

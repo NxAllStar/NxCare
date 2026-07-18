@@ -22,7 +22,8 @@ from vaic.models import ServiceOrder, ServiceType
 def _order_and_type(code: str, **type_kw) -> tuple[ServiceOrder, ServiceType]:
     diagnosis_id = uuid4()
     st = ServiceType(code=code, display_label=code, **type_kw)
-    order = ServiceOrder(diagnosis_id=diagnosis_id, service_type_id=st.id, ordered_by=uuid4())
+    order = ServiceOrder(patient_id=uuid4(), diagnosis_id=diagnosis_id, service_type_id=st.id,
+                          ordered_by=uuid4())
     return order, st
 
 

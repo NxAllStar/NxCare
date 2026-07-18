@@ -19,7 +19,7 @@ from uuid import uuid4
 
 from vaic.agents.careplan.slots import SlotCandidate, allocate_task_slot, build_allocate_slot_tool
 from vaic.agents.core import ActionExecutor
-from vaic.models import ExecutionStatus, Resource, ResourceType, Slot, Task
+from vaic.models import CarePlan, ExecutionStatus, Resource, ResourceType, Slot, Task
 from vaic.state import InMemoryRepository
 from vaic.tools import AuditLog, ConstraintChecker, ToolRegistry
 
@@ -34,7 +34,8 @@ def _build():
 
 
 def _task(repo, **kw) -> Task:
-    base = dict(care_plan_id=uuid4(), service_order_id=uuid4(), owner_id=uuid4(),
+    care_plan = repo.save(CarePlan(patient_id=uuid4(), diagnosis_id=uuid4()))
+    base = dict(care_plan_id=care_plan.id, service_order_id=uuid4(), owner_id=uuid4(),
                 estimated_duration_min=10)
     base.update(kw)
     return repo.save(Task(**base))
@@ -191,7 +192,7 @@ def test_m2_cancelled_task_slot_excluded_from_capacity_and_owner_clash():
 
     cancelled_task = _task(repo, owner_id=room.id, estimated_duration_min=10,
                             execution_status=ExecutionStatus.CANCELLED)
-    repo.save(Slot(task_id=cancelled_task.id, owner_id=room.id, start=start,
+    repo.save(Slot(patient_id=uuid4(), task_id=cancelled_task.id, owner_id=room.id, start=start,
                     end=start + timedelta(minutes=10)))
 
     # capacity is nominally "full" (1/hour) from the stale, cancelled booking alone - a live task

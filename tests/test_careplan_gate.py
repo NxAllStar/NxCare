@@ -21,6 +21,7 @@ from vaic.agents.careplan.gate import (
 )
 from vaic.agents.core import ActionExecutor
 from vaic.models import (
+    CarePlan,
     ExecutionStatus,
     Payment,
     PaymentStatus,
@@ -61,7 +62,8 @@ def _build(with_start_task_stub: bool = False):
 
 
 def _locked_task(repo, owner_id, **kw) -> Task:
-    base = dict(care_plan_id=uuid4(), service_order_id=uuid4(), owner_id=owner_id,
+    care_plan = repo.save(CarePlan(patient_id=uuid4(), diagnosis_id=uuid4()))
+    base = dict(care_plan_id=care_plan.id, service_order_id=uuid4(), owner_id=owner_id,
                 execution_status=ExecutionStatus.LOCKED, payment_status=PaymentStatus.UNPAID,
                 estimated_duration_min=15, sequence_index=0)
     base.update(kw)
@@ -86,7 +88,8 @@ def test_ac_05_2_and_05_4_authorised_confirmation_unlocks_and_enqueues_at_alloca
     repo, executor, audit = _build()
     owner = uuid4()
     task = _locked_task(repo, owner)
-    slot = repo.save(Slot(task_id=task.id, owner_id=owner, start=task.created_at))
+    slot = repo.save(Slot(patient_id=uuid4(), task_id=task.id, owner_id=owner,
+                           start=task.created_at))
     staff_id = uuid4()
 
     before = len(audit.entries())
