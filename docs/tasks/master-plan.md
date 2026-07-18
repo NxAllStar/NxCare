@@ -42,7 +42,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-013 | Auth + role-based access: login, session, server-side authz (FR-18) | agent-core-dev | TASK-003, TASK-004 | P1 | 2 | Done |
 | TASK-014 | Rounded-app features: reschedule/cancel, notifications center, settings+VI/EN, patient search (FR-19..22) - SUPERSEDED by TASK-023 (patient slice) + dropped staff search, 2026-07-18 | frontend-ui-dev | TASK-011, TASK-013 | P2 | 2 | Pending |
 | TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 - SUPERSEDED by TASK-021 (patient app foundation/shell), 2026-07-18 | frontend-ui-dev | TASK-011 | P2 | 2 | Pending |
-| TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | data-modeler | TASK-003 | P2 | 2 | Planned |
+| TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | tuan.nguyen15 | TASK-003 | P2 | 2 | Active |
 | TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Done |
 | TASK-018 | Relocate patient-app IA/sitemap + feature-architecture into a governed PRD; link spec 10 out to it | ba-analyst | - | P2 | 2 | Done |
 | TASK-019 | Scaffold frontend/ (Vite+React+TS+Tailwind+shadcn) plumbing-only; relocate design tokens into it | frontend-ui-dev | - | P2 | 2 | Done |

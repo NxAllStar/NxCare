@@ -1,8 +1,8 @@
 ---
 title: "TASK-016: Denormalize a resolvable patient link onto owned entities"
-status: Planned
+status: Active
 fr: "FR-18"
-owner: data-modeler
+owner: tuan.nguyen15
 deps: "TASK-003"
 priority: P2
 phase: 2
@@ -50,6 +50,7 @@ touches shared entities every agent lane reads.
 | Date | Who | What was done | Result |
 |------|-----|---------------|--------|
 | 2026-07-18 | orchestrator | Created task file from template so the data lane can claim it | Planned |
+| 2026-07-18 | tuan.nguyen15 | Claimed task, created branch feat/TASK-016-denormalize-patient-link off cnv-dev | Active |
 
 ## Result
 
