@@ -1,6 +1,6 @@
 ---
 title: "TASK-026: Hospital web console foundation, shell, staff login, role routing"
-status: Active
+status: Done
 fr: FR-12
 owner: frontend-ui-dev
 deps: TASK-021, TASK-013
@@ -113,3 +113,28 @@ the sidebar for that role and is reachable; every other console route redirects 
 | 2026-07-18 | code-reviewer | Read-only code-quality gate on `git diff da776d2...HEAD -- frontend/`. No Blockers or Major findings: the locked role->screen contract is implemented exactly in access.ts and covered row-by-row by access.test.ts + ConsoleApp.test.tsx + ConsoleShell.test.tsx; patient path untouched (App.test.tsx). 3 Minor + 3 Info raised (path-prefix match `startsWith('/console')` also matches `/console-*` -> blank page; unvalidated sessionStorage cast can crash on a tampered role; captured `state.from` never honored after login). Findings returned to orchestrator; no code modified. |
 | 2026-07-18 | security-reviewer | Read-only security/privacy gate on the same diff. No Blockers, no Major. Login is a pure role selector (no password param); no secret/credential/token/key anywhere; demo staff names are synthetic `(demo)`-suffixed personas; no dependency changes; no dangerouslySetInnerHTML/eval/innerHTML. Client-side guard is honestly framed as UX with server-side authz (FR-18 AC-18.3/BR-28) explicitly deferred (Info, correct). 1 Minor (same unvalidated sessionStorage role cast; ASVS v5.0.0 ch.1/5 boundary validation - robustness only, no privilege path since real authz is server-side). sessionStorage holds only a role marker, no token (Info, upgrades to Major only when a real token is stored there). GATE PASSED. |
 | 2026-07-18 | orchestrator | Accepted the two convergent Minor findings (exact-path match; validate stored role at the storage boundary) for immediate fix while the dev context is warm - they harden the base every follow-on screen builds on. Dead `state.from` cleanup folded in. Info items and the deferred server-side-authz note accepted as-is. Sent fixes back to frontend-ui-dev. Noted: code-reviewer appended its own log row (out of its read-only lane); content accurate, kept. |
+| 2026-07-18 | frontend-ui-dev | Fixed all three findings, commit a3c075a. Fix1: App.tsx now matches `=== '/console' \|\| startsWith('/console/')` (sibling paths like /console-room render the patient app). Fix2: readStoredSession validates role against a canonical STAFF_ROLES set + required fields, returns null (login) on mismatch - closes the tampered-storage white-screen (ASVS 1.2.5). Fix3: login honors the captured `from` target only if the role may access it, else the role default. Duplicate role list in ConsoleLoginPage removed (reuses STAFF_ROLES). +8 tests. In scope (only frontend/src/). |
+| 2026-07-18 | orchestrator | Verified fix commit a3c075a against git (in-scope, working tree clean) and independently re-ran gates under node v22.21.1: `tsc -b --noEmit` clean exit 0; `vitest run` 29 files / 201 tests passed, 0 failed. /secret-scan on the console diff: no forbidden files, no credential/key patterns; every credential-word match is a comment asserting absence (login is a role selector, no password). GATE PASSED. All acceptance criteria met. Closing TASK-026 Done. |
+
+## Result
+
+Delivered: the hospital console foundation inside the existing `frontend/` Vite app, on branch
+`feat/TASK-026-hospital-console-foundation` (commits `0ba37b2` build, `a3c075a` review fixes; base
+`frontend`, not merged - human merge gate). `frontend/src/console/` holds the path-based entry
+switch (App.tsx: `/console` mounts the console, every other path renders `PatientCompanionApp`
+unchanged with `?home=1` intact), a demo staff session/role model kept fully separate from the
+patient `AuthContext` (patient path unaffected by construction), a desktop sidebar shell, a
+role-selector login, a client-side role guard enforcing the locked role->screen contract, and 5
+`ScreenState` stubs for SCR-03..07.
+
+Gates (all recorded above): spec-guardian scope lock; typecheck clean; Vitest 201/201 (patient
+suite included, no regression); code-reviewer + security-reviewer both pass (no Blocker/Major, all
+raised Minors fixed); secret-scan clean.
+
+Follow-ups, with where they now live:
+- Real SCR-06 flagship dashboard -> TASK-027; SCR-03/04 doctor -> TASK-028; SCR-05 technician ->
+  TASK-029; SCR-07 admin/audit (with the sub-element role split) -> TASK-030; console QA + e2e +
+  final gates -> TASK-031.
+- Server-side authorization (FR-18 AC-18.3/BR-28) is out of scope here and owned by `agent-core-dev`
+  (`src/vaic/auth/`); the client guard is UX only. Not yet on the board as a task - flagged for
+  scheduling before any real deployment.
