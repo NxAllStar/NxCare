@@ -14,10 +14,12 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .coordinator_routes import build_coordinator_router
 from .demo_state import (
     build_repository,
     seed_arrival_demo,
     seed_consult_queue_demo,
+    seed_demo_care_plan,
     seed_demo_resources,
     seed_service_types_demo,
 )
@@ -46,9 +48,11 @@ def create_app() -> FastAPI:
     seed_demo_resources(repo)
     seed_arrival_demo(repo)
     seed_service_types_demo(repo)
+    seed_demo_care_plan(repo)
     seed_consult_queue_demo(repo)
     app.include_router(build_intake_router(repo))
     app.include_router(build_staff_router(repo))
+    app.include_router(build_coordinator_router(repo))
 
     @app.get("/health")
     def health() -> dict[str, str]:
