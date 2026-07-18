@@ -88,6 +88,54 @@ EN: Operational data across areas (appointments, check-in, clinics, labs, imagin
 | Công suất phòng/thiết bị / Room-equipment utilisation | FIFO baseline run | Cao hơn baseline / Higher than baseline | % thời gian bận / % busy time in the simulator |
 | Sai số dự báo ETA (MAE) / ETA forecast error (MAE) | Chưa đo / Not measured | Đủ thấp để bệnh nhân tin ETA / Low enough to be actionable - target chưa chốt [OI-05](11-assumptions-constraints.md#oi-05) | Dự báo vs thực tế mô phỏng / Predicted vs simulated actual |
 
+## Contest brief (guiding source) {#contest-brief}
+
+VI: Bản tóm tắt cuộc thi dưới đây (do Team lead cung cấp) là **nguồn yêu cầu dẫn dắt** mà sản phẩm này tiến hoá xung quanh - không phải một nguồn tham khảo song song với `docs/proposal.md`, mà là điểm neo cấp cao hơn mà cả proposal lẫn 22 FR đều phải truy vết về. Bản tóm tắt được trích **nguyên văn** (giữ tiếng Anh gốc, không dịch, để không bên nào có thể tranh cãi diễn giải); phần khung bilingual chỉ áp dụng cho lời dẫn và các bảng truy vết bên dưới.
+
+EN: The contest summary below (supplied by the Team lead) is the **guiding requirement source** this product evolves around - not a reference parallel to `docs/proposal.md`, but the higher-level anchor that both the proposal and the 22 FRs must trace back to. The brief is quoted **verbatim** (kept in its original English, not translated, so no side can dispute the wording); the bilingual framing applies only to the lead-in and the traceability tables below.
+
+> **Problem Statement** - Hospitals lack a unified, real-time view of how patients move through the system. Appointment, registration, clinic, lab, and imaging data sit in silos. Result: patients bunch up in the same slots while others go unused; patients get routed to the wrong area and backtrack; patients wait with no visibility into how long it will take. Goal: build a smart coordination system connecting appointments, check-in, clinics, labs, imaging, and real-time department status into one system.
+>
+> **Core Features**
+> 1. Appointment Coordination - distribute patients across doctors, specialties, and time slots; prevent overcrowding at popular times while other slots stay empty; balance load dynamically based on real demand, not fixed scheduling.
+> 2. Patient Routing - route based on symptoms, priority level, patient category, and required services; direct patients to the correct area from the first step; eliminate repeated trips and wrong-queue errors.
+> 3. Wait-Time Estimation - analyze number of patients waiting, average consultation time, and clinic/equipment status; forecast expected service time per patient; display via app, digital screen, or SMS.
+> 4. Service-Sequencing Recommendations - auto-order tests/procedures (blood work, ultrasound, X-ray, CT, MRI, etc.); base sequencing on wait times, fasting requirements, result turnaround time, and equipment availability; example: draw blood -> X-ray while blood processes -> ultrasound -> return to doctor once all results ready; minimize idle waiting and backtracking.
+> 5. Real-Time Adjustment - re-coordinate the plan when a clinic is overloaded, equipment fails, a doctor's schedule shifts, or an emergency arrives; keep all downstream steps (routing, sequencing, wait estimates) updated automatically.
+>
+> **Success Metrics** - reduced average patient wait time; reduced congestion across departments; increased clinic and equipment utilization; patients able to actively track their own care pathway in real time.
+
+### Core feature to FR traceability
+
+VI: Bảng dưới nối mỗi tính năng cốt lõi của brief với các FR hiện có đáp ứng nó. Không FR nào được tạo mới cho việc này - nếu một tính năng của brief không có FR khớp đủ, điều đó được ghi thành open issue ở [11](11-assumptions-constraints.md), không phải một FR ngầm định thêm vào.
+
+EN: The table below links each core feature of the brief to the existing FRs that satisfy it. No FR was created for this exercise - where a brief feature is not fully covered by an existing FR, that gap is recorded as an open issue in [11](11-assumptions-constraints.md), not quietly folded in as added scope.
+
+| Brief core feature | Satisfied by | How |
+|---|---|---|
+| 1. Appointment Coordination | [FR-02](05-functional-requirements.md#fr-02), [FR-08](05-functional-requirements.md#fr-08) | FR-02 proposes the least-crowded slot ranked by forecast load, avoiding same-time bunching; FR-08's `allocate_slot()` assigns each task a slot within doctor/room capacity, keeping load dynamic rather than fixed-schedule. |
+| 2. Patient Routing | [FR-01](05-functional-requirements.md#fr-01), [FR-06](05-functional-requirements.md#fr-06) | FR-01 routes on symptoms via a structured triage record `{specialty, priority_level, constraints}`, directing the patient to the correct area from the first step; FR-06's Journey Agent escorts and resequences per patient to prevent backtracking and repeated queues once the pathway is under way. See the flagged gap on "patient category" below. |
+| 3. Wait-Time Estimation | [FR-07](05-functional-requirements.md#fr-07), [FR-11](05-functional-requirements.md#fr-11), [FR-15](05-functional-requirements.md#fr-15) | FR-07 forecasts per-room ETA, hourly load, and no-show from queue length, historical service time, and equipment (`Resource.is_available`); FR-11 displays it to the patient in-app (chat + timeline), in scope for this demo; FR-15 extends display to a waiting screen and SMS but is Could-priority and out of scope this release (see [Out of scope](#out-of-scope) above). |
+| 4. Service-Sequencing Recommendations | [FR-04](05-functional-requirements.md#fr-04) | FR-04's Care Plan Agent auto-orders tests/procedures from the doctor's `ServiceOrder`s, sequencing on fasting requirements, turnaround, and dependency; AC-04.1 encodes the brief's own example (blood draw first, X-ray while blood processes, then ultrasound). |
+| 5. Real-Time Adjustment | [FR-09](05-functional-requirements.md#fr-09), [FR-10](05-functional-requirements.md#fr-10) | FR-09's Disruption Agent re-plans on overload, equipment failure, doctor-schedule shift, or emergency, auto-executing under threshold N and routing larger blast radius to coordinator approval; FR-10's Coordinator Agent runs the perceive-reason-act loop that keeps downstream routing, sequencing, and wait estimates consistent after a re-plan. |
+
+### Success metric to goal traceability
+
+VI: Bốn success metric của brief đối chiếu với các Goal đã có (G-01..G-04) và bảng Success metrics ở trên; không thêm Goal mới.
+
+EN: The brief's four success metrics map onto the existing Goals (G-01..G-04) and the Success metrics table above; no new Goal was added.
+
+| Brief success metric | Goal | Success metrics table row |
+|---|---|---|
+| Reduced average patient wait time | [G-01](#goals) | "Avg wait time" |
+| Reduced congestion across departments | [G-02](#goals) | "Peak load per area" |
+| Increased clinic and equipment utilization | [G-03](#goals) | "Room-equipment utilisation" |
+| Patients able to actively track their own care pathway in real time | [G-04](#goals) | No dedicated quantified row - G-04 is tracked qualitatively via [FR-06](05-functional-requirements.md#fr-06), [FR-11](05-functional-requirements.md#fr-11), [FR-17](05-functional-requirements.md#fr-17); see [OI-05](11-assumptions-constraints.md#oi-05) on unset numeric targets generally. |
+
+VI: Một khoảng trống thực đã được rà soát và ghi lại thay vì âm thầm bổ sung phạm vi: tính năng 2 của brief nêu "patient category" (VD trẻ em/người lớn tuổi/nhóm bảo hiểm) như một tiêu chí định tuyến, nhưng schema triage của [FR-01](05-functional-requirements.md#fr-01) hiện chỉ có `{specialty, priority_level, constraints}` - không có trường patient-category tường minh. Xem [OI-23](11-assumptions-constraints.md#oi-23).
+
+EN: One genuine gap was reviewed and recorded rather than silently folded into scope: the brief's Feature 2 names "patient category" (e.g. child/elderly/insurance class) as a routing criterion, but [FR-01](05-functional-requirements.md#fr-01)'s triage schema currently holds only `{specialty, priority_level, constraints}` - no explicit patient-category field. See [OI-23](11-assumptions-constraints.md#oi-23).
+
 ## Judging criteria
 
 VI: Bài thi được chấm trên 6 tiêu chí, tổng 100 điểm. Bảng dưới nối mỗi tiêu chí với nơi bộ đặc tả đáp ứng - dùng khi chuẩn bị phần trình bày và phòng thủ (Presentation & Defensibility).
@@ -135,5 +183,6 @@ EN: The LLM reasons and coordinates; the Forecast tool is an **LLM-with-reasonin
 
 ## References
 
+- Contest brief - the guiding requirement source, quoted verbatim in [Contest brief (guiding source)](#contest-brief) above; supplied by the Team lead as the original hackathon problem statement, core features, and success metrics.
 - `docs/proposal.md` - AI-native proposal (bilingual): problem statement and multi-agent architecture, sections 1-8.
 - Elicitation session: 4 decisions confirmed by Team lead (delivery = hackathon/demo on simulator; language = bilingual; learning loop = out of scope; security owner = Team lead, no real PHI).

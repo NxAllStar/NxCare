@@ -1,15 +1,15 @@
 ---
-title: "ADR-001: Agent framework - LangGraph, isolated behind the agent-core interface"
-status: Proposed # Proposed | Accepted | Deprecated | Superseded by ADR-MMM
+title: "ADR-001: Agent framework - PocketFlow, isolated behind the agent-core interface"
+status: Accepted # Proposed | Accepted | Deprecated | Superseded by ADR-MMM
 date: 2026-07-18
-deciders: []
+deciders: [Team lead]
 tags: [adr, architecture]
 ---
 
-# ADR-001: Agent framework - LangGraph, isolated behind the agent-core interface
+# ADR-001: Agent framework - PocketFlow, isolated behind the agent-core interface
 
-Resolves spec open issue OI-18. Recorded from TASK-001. **Proposed** - awaiting Team-lead acceptance;
-once accepted it becomes immutable (docs-workflow), so land any change before the flip.
+Resolves spec open issue OI-18. Recorded from TASK-001. **Accepted** - ratified by the Team lead on
+2026-07-18. Immutable now (docs-workflow): supersede it with a new ADR rather than editing this one.
 
 ## Context
 
@@ -33,37 +33,48 @@ Binding constraints, from the specs:
 
 ## Decision
 
-Use **LangGraph** for the orchestration graph (Coordinator/Disruption, shared state, human-in-the-loop
-interrupts, streaming), and **isolate it behind the `src/vaic/agents/core` interface** so that
-individual agents and every tool (Intake, Journey, the forecast-LLM, the constraint checker) are plain
-framework-agnostic Python. The framework choice must not leak past agent-core.
+Use **PocketFlow** for the orchestration graph (Coordinator/Disruption, shared state, human-in-the-loop,
+streaming), and **isolate it behind the `src/vaic/agents/core` interface** so that individual agents and
+every tool (Intake, Journey, the forecast-LLM, the constraint checker) are plain framework-agnostic
+Python. The framework choice must not leak past agent-core.
+
+LangGraph (Option A) was the strong alternative and is now the documented fallback - see the reversal
+condition. Its built-in interrupt/resume and streaming were weighed against PocketFlow's transparency,
+zero dependencies, and plain-dict Redis mapping - the team chose to own those two primitives in
+exchange for a minimal, fully transparent runtime.
 
 ## Options considered
 
 | Option | Pros | Cons |
 |--------|------|------|
-| A (chosen) LangGraph, isolated behind agent-core | Interrupt/resume for tiered approval and streaming are built in - the two demo-critical primitives that are expensive to hand-roll; graph + shared-state maps 1:1 to the proposal's architecture; checkpointing aligns with the harness "survive compaction" ethos; matches the team's roadmap; multi-backend model support | A framework to learn and debug under time pressure; opinionated state/checkpoint model that must be reconciled with Redis (use a Redis checkpointer or keep domain state in Redis and graph state thin); an added dependency |
+| A LangGraph, isolated behind agent-core | Interrupt/resume for tiered approval and streaming are built in - the two demo-critical primitives that are expensive to hand-roll; graph + shared-state maps 1:1 to the proposal's architecture; checkpointing aligns with the harness "survive compaction" ethos; matches the team's roadmap; multi-backend model support | A framework to learn and debug under time pressure; opinionated state/checkpoint model that must be reconciled with Redis (use a Redis checkpointer or keep domain state in Redis and graph state thin); an added dependency |
 | B Hand-rolled FastAPI tool-use loop | Minimal deps; full control; constraint checker trivially placed before every action; transparent latency/cost; leanest for a few agents | Must build interrupts, resume, parallel dispatch, and streaming yourself - exactly the primitives that are hard to get right quickly; more code to write and test in a hackathon |
+| C (chosen) PocketFlow (~100-line graph lib, zero deps), isolated behind agent-core | Minimal (~100 lines, zero dependencies, ~56KB) and fully transparent - readable and debuggable under time pressure; shared store is a plain dict that serialises straight to Redis, so it removes Option A's state/checkpoint reconciliation friction; constraint checker slots in as a node or exec() wrapper; no vendor lock-in, trivial to point at both the hosted API and self-hosted Qwen; isolation-behind-agent-core ethos fits its compose-your-own philosophy | Does NOT provide the two demo-critical primitives as core features - interrupt/resume and streaming are cookbook patterns you build and debug yourself (this is why it is nearer Option B than Option A); no built-in checkpointer; you own all the plumbing, which is the cost the framework was meant to save under a hackathon deadline |
 
 ## Consequences
 
-- Positive: tiered approval (FR-09) and streamed reasoning (demo step 3) come from framework
-  primitives, not hand-rolled code; the graph/state model matches the spec; the team builds on its
-  existing roadmap.
-- Negative and trade-offs: a learning/debugging cost, and LangGraph's own state/checkpoint must be
-  reconciled with Redis rather than duplicated. Isolation behind agent-core is the mitigation and is
-  mandatory, not optional.
-- Reversal condition (named, so it is a decision not a hope): if LangGraph debugging blocks the demo
-  build, fall back to Option B. Because agents and tools are framework-agnostic by this ADR, the
-  fallback is a change to `agent-core` only - not a rewrite. A reversal is a new ADR superseding this one.
+- Positive: a minimal, fully transparent runtime that is readable and debuggable under time pressure;
+  a plain-dict shared store that serialises straight to Redis with zero state/checkpoint reconciliation
+  friction; zero dependencies and no vendor lock-in; trivially points at both the hosted API and
+  self-hosted Qwen; isolation behind agent-core is cheap to honour.
+- Negative and trade-offs: the two demo-critical primitives are NOT framework primitives and must be
+  hand-rolled and tested - interrupt/resume for tiered approval (FR-09) and streaming reasoning (demo
+  step 3). There is no built-in checkpointer, so persistence against Redis is hand-rolled. Mitigation:
+  build and test these two primitives EARLY - they are on the critical path - and the isolation behind
+  agent-core keeps a reversal cheap.
+- Reversal condition (named, so it is a decision not a hope): if hand-rolling interrupt/resume or
+  streaming blocks the demo build, fall back to LangGraph (Option A), whose interrupt/resume,
+  streaming, and checkpointer are built in. Because agents and tools are framework-agnostic by this
+  ADR, the fallback is a change to `agent-core` only - not a rewrite. A reversal is a new ADR
+  superseding this one.
 - Follow-up work:
   - TASK-004 builds the agent-core interface first, framework code strictly behind it.
-  - Reconcile LangGraph state with Redis (`src/vaic/state`) - decide checkpointer vs thin graph state
-    in TASK-003/TASK-004.
+  - PocketFlow's shared dict maps to Redis directly, so decide the serialisation boundary (what lives
+    in Redis vs the in-flight shared dict) in TASK-003/TASK-004.
   - Empirical check: PoC-3 (spec 12) measures agent-loop latency/cost at ~50-100 patients; if it
     fails the NFR-PERF budget (OI-05), revisit batching or the reversal condition - not this ADR's
     framework choice per se.
-  - On acceptance: update `.claude/rules/tech-stack.md` to name LangGraph and drop the "not ratified"
+  - On acceptance: update `.claude/rules/tech-stack.md` to name PocketFlow and drop the "not ratified"
     note, and move TASK-001 to Done.
 
 ## References

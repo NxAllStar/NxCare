@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nxcare_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_NAME:-nxcare}
+      POSTGRES_USER: ${POSTGRES_USER:-nxcare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - nxcare_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nxcare} -d ${POSTGRES_NAME:-nxcare}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: nxcare_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nxcare_be:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nxcare_be
+    env_file:
+      - .env
+    environment:
+      VAIC_STATE_BACKEND: redis
+      VAIC_REDIS_URL: redis://redis:6379/0
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_NAME: ${POSTGRES_NAME:-nxcare}
+      POSTGRES_USER: ${POSTGRES_USER:-nxcare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      VAIC_CORS_ORIGINS: ${VAIC_CORS_ORIGINS:-http://localhost:5173}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nxcare_fe:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    container_name: nxcare_fe
+    ports:
+      - "5173:80"
+    depends_on:
+      - nxcare_be
+
+volumes:
+  nxcare_postgres_data:

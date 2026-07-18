@@ -118,13 +118,12 @@ Routing:
 | Strategic project evaluation against 6 criteria (tech, AI, business, UX, safety, presentation) | `judge` |
 | Options + trade-off analysis for a decision | `brainstormer` (+ `tech-researcher` for evidence) -> ADR |
 | Spec and PRD upkeep | `ba-analyst` |
-| Run archive curation | `history-tracker` |
 | Route, supervise, record | `orchestrator` |
 
-The standard feature flow, and none of it is optional: `spec-guardian` locks the scope, the
-specialist implements test-first, `qa-test` runs the suites, `code-reviewer` and
-`security-reviewer` run in parallel, `/secret-scan` runs, and only then is the PR opened.
-Run it with `/implement-fr FR-NN`.
+The standard feature flow: `spec-guardian` locks the scope, the specialist implements test-first,
+`qa-test` runs the suites, `/secret-scan` runs, and only then is the PR opened. `code-reviewer` and
+`security-reviewer` are no longer a mandatory gate in this flow - dispatch them on request
+(`/review-changes` still runs both). Run it with `/implement-fr FR-NN`.
 
 ## Commands
 

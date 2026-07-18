@@ -22,10 +22,12 @@ class AuditLog:
         action: str,
         reasoning: str = "",
         target_id: UUID | None = None,
+        patient_id: UUID | None = None,
     ) -> AuditLogEntry:
         """Append one entry and return it. There is deliberately no way to edit a recorded entry."""
         entry = AuditLogEntry(
-            actor=actor, action=action, reasoning=reasoning, target_id=target_id
+            actor=actor, action=action, reasoning=reasoning, target_id=target_id,
+            patient_id=patient_id,
         )
         return self._repo.save(entry)
 

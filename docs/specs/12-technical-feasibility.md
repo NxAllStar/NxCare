@@ -37,6 +37,7 @@ tags: [specs, feasibility, risk, vaic]
 | [FR-20](05-functional-requirements.md#fr-20) | Notifications center | Yes | Danh sách có phân trang + trạng thái đã đọc / paginated list with read state | High | - |
 | [FR-21](05-functional-requirements.md#fr-21) | Settings + VI/EN toggle | Yes | i18n nhãn hiển thị, codes giữ tiếng Anh / label i18n, codes stay English | High | - |
 | [FR-22](05-functional-requirements.md#fr-22) | Staff patient search | Yes | Tìm kiếm lọc theo scope ở tầng dữ liệu / scope-filtered search in the data layer | High | - |
+| [FR-23](05-functional-requirements.md#fr-23) | Aggregated per-station wait & AI route recommendation | Partial | Gộp `estimate_wait()` là logic đơn giản (Yes); ưu tiên hàng đợi + đánh dấu song song trong sequencing hiện có kế thừa cùng rủi ro độ tin của LLM như FR-04 / aggregating `estimate_wait()` is simple, but queue-preferential ordering and parallel-eligible flagging inside the existing sequencer inherit FR-04's LLM-reliability risk | Medium | Fallback về thứ tự chỉ theo BR-08 khi không đề xuất được hợp lệ (giống FR-04); UI cho khung nhìn gộp/tuyến đề xuất trên SCR-02 chưa được vẽ |
 
 ## Technical approach
 

@@ -22,6 +22,8 @@ from .enums import (
     PaymentStatus,
     PaymentSubjectType,
     PriorityLevel,
+    QueueSubjectType,
+    QueueTicketStatus,
     ResourceType,
 )
 
@@ -58,11 +60,17 @@ class Appointment(_Base):
     specialty: str
     status: AppointmentStatus = AppointmentStatus.PROPOSED
     payment_status: PaymentStatus = PaymentStatus.UNPAID
+    # ADR-003: the consult's owning Resource (doctor/room). Nullable while PROPOSED, before a
+    # department queue is attached. Its queue position lives on a QueueTicket, not here.
+    owner_id: UUID | None = None
+    # ADR-003: reinterpreted as a *recommended arrival window*, not a reserved slot - the walk-in
+    # ticket, not this timestamp, determines serving order.
     slot_start: datetime | None = None
     created_at: datetime = Field(default_factory=_now)
 
 
 class Diagnosis(_Base):
+    patient_id: UUID  # denormalized from Appointment so Own-scope resolves directly (TASK-016)
     appointment_id: UUID
     conditions: list[str] = Field(default_factory=list)  # Sensitive PII
     diagnosed_by: UUID  # the doctor
@@ -70,6 +78,7 @@ class Diagnosis(_Base):
 
 
 class ServiceOrder(_Base):
+    patient_id: UUID  # denormalized from Diagnosis so Own-scope resolves directly (TASK-016)
     diagnosis_id: UUID
     service_type_id: UUID
     ordered_by: UUID  # only a doctor may create this (BR-05) - enforced at the write boundary
@@ -118,6 +127,7 @@ class Task(_Base):
 
 
 class Slot(_Base):
+    patient_id: UUID  # denormalized from Task/CarePlan so Own-scope resolves directly (TASK-016)
     task_id: UUID
     owner_id: UUID
     start: datetime
@@ -127,12 +137,20 @@ class Slot(_Base):
 class Payment(_Base):
     """A proceed-gate flag, NOT money processing (AS-02). `amount` is display-only."""
 
+    patient_id: UUID  # denormalized since subject_id is polymorphic (TASK-016)
     subject_type: PaymentSubjectType
     subject_id: UUID
     amount: Decimal | None = None
     status: PaymentStatus = PaymentStatus.UNPAID
     confirmed_by: UUID | None = None  # authorised source (staff / hospital billing)
     confirmed_at: datetime | None = None
+
+
+class Department(_Base):
+    """A queue-owning department (ADR-003). `code` renders the ticket label prefix, e.g. `DepB`."""
+
+    code: str  # short prefix shown on tickets/screens, e.g. `DepB`
+    display_label: str
 
 
 class Resource(_Base):
@@ -163,6 +181,9 @@ class AuditLogEntry(_Base):
     actor: str
     action: str
     target_id: UUID | None = None
+    # Nullable (TASK-016): not every entry is about a patient (e.g. a blocked unknown-tool call
+    # audited before any patient context is resolved). When set, it resolves Own-scope directly.
+    patient_id: UUID | None = None
     reasoning: str = ""
     created_at: datetime = Field(default_factory=_now)
 
@@ -172,6 +193,31 @@ class ScanEvent(_Base):
     task_id: UUID
     scanned_by: UUID  # must be the task owner (BR-26)
     scanned_at: datetime = Field(default_factory=_now)
+
+
+class QueueTicket(_Base):
+    """A numbered ticket in a department-scoped shared queue (ADR-003).
+
+    Polymorphic over its subject, like `Payment`: a `CONSULT` ticket points at an `Appointment`,
+    a `SERVICE` ticket at a `Task`. `ticket_label` (e.g. `DepB-00001`) is a human-readable identity
+    announced on the desk screen, NOT the serving order - order is `(priority_band, issued_at)`.
+    """
+
+    patient_id: UUID  # set at desk registration; denormalized so Own-scope resolves directly
+    department_id: UUID  # FK -> Department; the queue scope and number series
+    # optional service-capability key: splits the queue when a department's rooms are not
+    # interchangeable (skill-based routing). None = one shared queue for the whole department.
+    capability: str | None = None
+    # copied from Patient.priority_level at issue; drives the serving order and the number series
+    priority_band: PriorityLevel = PriorityLevel.ROUTINE
+    subject_type: QueueSubjectType
+    subject_id: UUID  # FK -> Appointment (CONSULT) or Task (SERVICE)
+    ticket_seq: int  # monotonic within (department, priority_band, day)
+    ticket_label: str  # rendered token, e.g. `DepB-00001` / `DepB-E-00001`
+    status: QueueTicketStatus = QueueTicketStatus.WAITING
+    called_by_owner_id: UUID | None = None  # the Resource that called it; None until CALLED
+    issued_at: datetime = Field(default_factory=_now)  # FIFO tiebreaker within a band
+    called_at: datetime | None = None
 
 
 # The registry the repository uses to key collections. English names, one per entity.
@@ -186,9 +232,11 @@ ENTITIES: tuple[type[_Base], ...] = (
     Task,
     Slot,
     Payment,
+    Department,
     Resource,
     DisruptionEvent,
     Notification,
     AuditLogEntry,
     ScanEvent,
+    QueueTicket,
 )

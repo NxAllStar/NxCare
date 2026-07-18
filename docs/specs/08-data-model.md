@@ -35,6 +35,14 @@ erDiagram
   PATIENT ||--o{ SCAN_EVENT : "identified by code at"
   RESOURCE ||--o{ SCAN_EVENT : "scanned at"
 
+  PATIENT ||--o{ QUEUE_TICKET : "holds"
+  DEPARTMENT ||--o{ QUEUE_TICKET : "scopes queue for"
+  RESOURCE ||--o{ QUEUE_TICKET : "calls"
+  RESOURCE }o--|| DEPARTMENT : "belongs to"
+  APPOINTMENT ||--o| QUEUE_TICKET : "queued by (CONSULT)"
+  TASK ||--o| QUEUE_TICKET : "queued by (SERVICE)"
+  APPOINTMENT }o--o| RESOURCE : "owned by"
+
   PATIENT {
     uuid id PK
     string full_name
@@ -67,7 +75,28 @@ erDiagram
     string specialty
     string status
     string payment_status
+    uuid owner_id FK
     datetime slot_start
+  }
+  DEPARTMENT {
+    uuid id PK
+    string code
+    string display_label
+  }
+  QUEUE_TICKET {
+    uuid id PK
+    uuid patient_id FK
+    uuid department_id FK
+    string capability
+    string priority_band
+    string subject_type
+    uuid subject_id FK
+    int ticket_seq
+    string ticket_label
+    string status
+    uuid called_by_owner_id FK
+    datetime issued_at
+    datetime called_at
   }
 ```
 
@@ -89,7 +118,9 @@ erDiagram
 | `Slot` | Slot thời gian của một owner / A time slot for an owner | `role_coordinator` | 1 per task (khi xếp) | per run |
 | `Payment` | Bản ghi cờ cho phép tiến hành (không xử lý tiền) / A proceed-gate flag record (no money processing) | `role_patient` | 1 per gated item | per [NFR-SEC-19](07-non-functional-requirements.md#nfr-security) |
 | `ScanEvent` | Sự kiện quét mã bệnh nhân tại phòng / A patient-code scan at a room | `role_doctor` / `role_technician` | Nhiều / many | per run |
+| `Department` | Khoa sở hữu hàng đợi / A queue-owning department (ADR-003) | `role_admin` | Vài chục / dozens | Cấu hình / config |
 | `Resource` | Phòng/thiết bị/owner có capacity / A room, equipment, or staff owner | `role_admin` | Vài chục / dozens | Cấu hình / config |
+| `QueueTicket` | Vé số trong hàng đợi theo khoa / A numbered ticket in a department-scoped queue (ADR-003) | `role_coordinator` | Nhiều / many | per run |
 | `DisruptionEvent` | Sự cố cần re-plan / A disruption needing re-plan | `role_coordinator` | Vài per run | per run |
 | `Notification` | Thông báo tới bệnh nhân / A patient notification | system | Nhiều / many | per run |
 | `AuditLogEntry` | Quyết định agent + reasoning / An agent decision and its reasoning | system | Nhiều / many | per [NFR-SEC-19](07-non-functional-requirements.md#nfr-security) |
@@ -121,18 +152,21 @@ erDiagram
 | `specialty` | string | Yes | Confidential | Chuyên khoa được định tuyến / routed specialty | `cardiology` |
 | `status` | enum | Yes | Internal | Trạng thái buổi khám / consult status - see [03](03-glossary.md) | `BOOKED` |
 | `payment_status` | enum | Yes | Internal | `UNPAID`/`PAID` (cổng thanh toán) | `PAID` |
-| `slot_start` | datetime | Yes | Internal | Giờ bắt đầu slot / slot start | `2026-07-17T09:30:00Z` |
+| `owner_id` | uuid | No | Internal | FK -> `Resource` (bác sĩ/phòng khám) khi đã gắn vào hàng đợi khoa / owning doctor/room once queued (ADR-003) | `dr1...` |
+| `slot_start` | datetime | No | Internal | Khung giờ đến khuyến nghị, KHÔNG phải chỗ đặt trước / a recommended arrival window, not a reservation (ADR-003) | `2026-07-17T09:30:00Z` |
 
 **Constraints and invariants**
 
 - `status` chỉ chuyển theo state machine bên dưới - see BR liên quan [FR-03](05-functional-requirements.md#fr-03).
 - Buổi khám chỉ `IN_CONSULT` khi `payment_status = PAID` (BR-10 mở rộng cho khám).
+- `owner_id` nullable khi `PROPOSED`; vị trí hàng đợi nằm trên `QueueTicket`, không phải ở đây (ADR-003). / nullable while PROPOSED; queue position lives on `QueueTicket`, not here.
 
 ### `ServiceOrder`
 
 | Field | Type | Required | Classification | Description | Example |
 |-------|------|----------|----------------|-------------|---------|
 | `id` | uuid | Yes | Internal | Primary key | `so1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized from `Diagnosis` so Own-scope resolves directly (TASK-016) | `9f1c...` |
 | `diagnosis_id` | uuid | Yes | Internal | FK -> `Diagnosis` | `dg1...` |
 | `service_type_id` | uuid | Yes | Internal | FK -> `ServiceType` | `st1...` |
 | `ordered_by` | uuid | Yes | Internal | FK -> bác sĩ ký / signing doctor | `dr1...` |
@@ -142,6 +176,7 @@ erDiagram
 
 - Chỉ `role_doctor` tạo `ServiceOrder` (BR-05); không agent nào tạo được.
 - `ordered_by` phải là bác sĩ khám buổi đó.
+- `patient_id` phải khớp `Diagnosis.patient_id` của `diagnosis_id` (TASK-016).
 
 ### `ServiceType`
 
@@ -195,6 +230,22 @@ erDiagram
 - `execution_status` chỉ chuyển theo state machine bên dưới.
 - Không được đặt `sequence_index` vi phạm `depends_on` (BR-08, BR-13).
 
+### `Slot`
+
+| Field | Type | Required | Classification | Description | Example |
+|-------|------|----------|----------------|-------------|---------|
+| `id` | uuid | Yes | Internal | Primary key | `sl1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized từ `Task`/`CarePlan` để Own-scope resolve trực tiếp / denormalized so Own-scope resolves directly (TASK-016) | `9f1c...` |
+| `task_id` | uuid | Yes | Internal | FK -> `Task` được xếp / task allocated | `tk1...` |
+| `owner_id` | uuid | Yes | Internal | FK -> `Resource` giữ slot / owning resource | `kt1...` |
+| `start` | datetime | Yes | Internal | Giờ bắt đầu / slot start | `2026-07-17T09:30:00Z` |
+| `end` | datetime | No | Internal | Giờ kết thúc / slot end | `2026-07-17T09:40:00Z` |
+
+**Constraints and invariants**
+
+- `patient_id` phải khớp `Patient` của `task_id` (qua `Task.care_plan_id` -> `CarePlan.patient_id`) (TASK-016).
+- `allocate_slot()` không xếp vào `Resource` có `is_available = false` (BR-16).
+
 ### `Payment`
 
 <!-- Not a money-processing record: it is the proceed-gate flag. The app never touches funds
@@ -203,6 +254,7 @@ erDiagram
 | Field | Type | Required | Classification | Description | Example |
 |-------|------|----------|----------------|-------------|---------|
 | `id` | uuid | Yes | Internal | Primary key | `pm1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized vì `subject_id` là polymorphic / so Own-scope resolves directly (TASK-016) | `9f1c...` |
 | `subject_type` | enum | Yes | Internal | `TASK`/`APPOINTMENT` | `TASK` |
 | `subject_id` | uuid | Yes | Internal | FK -> task/appointment | `tk1...` |
 | `amount` | decimal | No | Confidential | Số tiền cần thanh toán để hiển thị (không xử lý) / amount to display only, not processed | `150000` |
@@ -212,7 +264,7 @@ erDiagram
 
 **Constraints and invariants**
 
-- App không xử lý tiền; chỉ nguồn được ủy quyền chuyển `status = PAID` (BR-11); nguồn xác nhận tại [OI-19](11-assumptions-constraints.md#oi-19).
+- App không xử lý tiền; chỉ nguồn được ủy quyền chuyển `status = PAID` (BR-11). Cơ chế: nhân viên quét mã bệnh nhân (`patient_code`) tại quầy để xác nhận, ghi vào `confirmed_by`/`confirmed_at` (BR-36, [FR-05](05-functional-requirements.md#fr-05)) - khác với `ScanEvent` (hiện diện tại phòng, [FR-17](05-functional-requirements.md#fr-17)). Vai trò nhân viên cụ thể chưa chốt: [OI-19](11-assumptions-constraints.md#oi-19).
 
 ### `ScanEvent`
 
@@ -229,6 +281,20 @@ erDiagram
 - `scanned_by` phải là owner của `task_id` (BR-26); không quét được task `LOCKED` (BR-27).
 - Một quét hợp lệ chuyển `Task.execution_status` `PENDING` -> `IN_PROGRESS` ([FR-17](05-functional-requirements.md#fr-17)).
 
+### `Department`
+
+<!-- ADR-003: the queue-owning unit. Its `code` renders the ticket-label prefix (e.g. `DepB`). -->
+
+| Field | Type | Required | Classification | Description | Example |
+|-------|------|----------|----------------|-------------|---------|
+| `id` | uuid | Yes | Internal | Primary key | `dep1...` |
+| `code` | string | Yes | Internal | Tiền tố nhãn vé / ticket-label prefix | `DepB` |
+| `display_label` | string | Yes | Internal | Nhãn hiển thị / display label | `Xet nghiem mau` |
+
+**Constraints and invariants**
+
+- `code` là duy nhất / unique; là tiền tố dựng nhãn vé (`{code}-00001`) trong `QueueTicket` (ADR-003).
+
 ### `Resource`
 
 | Field | Type | Required | Classification | Description | Example |
@@ -242,6 +308,36 @@ erDiagram
 **Constraints and invariants**
 
 - `allocate_slot()` không xếp vào `Resource` có `is_available = false` (BR-16).
+
+### `QueueTicket`
+
+<!-- ADR-003: a numbered ticket in a department-scoped shared queue. Polymorphic over its subject,
+     like `Payment`: CONSULT -> Appointment, SERVICE -> Task. `ticket_label` is a human-readable
+     identity announced at the desk, NOT the serving order - order is (priority_band, issued_at). -->
+
+| Field | Type | Required | Classification | Description | Example |
+|-------|------|----------|----------------|-------------|---------|
+| `id` | uuid | Yes | Internal | Primary key | `qt1...` |
+| `patient_id` | uuid | Yes | Internal | FK -> `Patient`, denormalized để Own-scope resolve trực tiếp (TASK-016) | `9f1c...` |
+| `department_id` | uuid | Yes | Internal | FK -> `Department`; phạm vi hàng đợi và dải số / queue scope and number series | `dep1...` |
+| `capability` | string | No | Internal | Khóa năng lực (khi phòng không thay thế được); rỗng = một hàng đợi chung / capability key; null = one shared queue | `PEDIATRIC` |
+| `priority_band` | enum | Yes | Confidential | `ROUTINE`/`URGENT`/`EMERGENCY`, chép từ `Patient.priority_level` khi cấp; dẫn dắt thứ tự & dải số | `ROUTINE` |
+| `subject_type` | enum | Yes | Internal | `CONSULT`/`SERVICE` | `SERVICE` |
+| `subject_id` | uuid | Yes | Internal | FK -> `Appointment` (CONSULT) hoặc `Task` (SERVICE) | `tk1...` |
+| `ticket_seq` | int | Yes | Internal | Số đơn điệu trong `(department, priority_band, ngày)` | `1` |
+| `ticket_label` | string | Yes | Internal | Nhãn hiển thị / rendered token | `DepB-00001` |
+| `status` | enum | Yes | Internal | `WAITING`/`CALLED`/`IN_SERVICE`/`DONE`/`SKIPPED` | `WAITING` |
+| `called_by_owner_id` | uuid | No | Internal | FK -> `Resource` gọi vé; rỗng đến khi `CALLED` / caller; null until CALLED | `kt1...` |
+| `issued_at` | datetime | Yes | Internal | Thời điểm cấp; tiebreaker FIFO trong một band | `2026-07-17T09:30:00Z` |
+| `called_at` | datetime | No | Internal | Thời điểm gọi / when called | `2026-07-17T09:40:00Z` |
+
+**Constraints and invariants**
+
+- `ticket_label` là định danh, KHÔNG phải thứ tự phục vụ; thứ tự = `(priority_band DESC, issued_at ASC)` trong một `(department, capability)` (ADR-003).
+- `EMERGENCY` dùng dải số riêng (nhãn `{code}-E-00001`) và luôn xếp trước `ROUTINE` (ADR-003).
+- Nhiều phòng của một khoa rút từ MỘT hàng đợi chung (M/M/c); `called_by_owner_id` gắn khi gọi, không phải khi cấp (ADR-003).
+- Bất biến: mỗi bệnh nhân có tối đa một `QueueTicket` `CALLED` hoặc `IN_SERVICE` cùng lúc / at most one active ticket per patient (ADR-003).
+- `subject_id` phải trỏ tới `Appointment` khi `subject_type = CONSULT`, tới `Task` khi `= SERVICE`.
 
 ### `DisruptionEvent`
 
@@ -280,17 +376,19 @@ erDiagram
 | `actor` | string | Yes | Internal | Agent hoặc role người / agent or human role | `Disruption Agent` |
 | `action` | string | Yes | Internal | Hành động / action taken | `resequence_patient` |
 | `target_id` | uuid | No | Internal | FK -> đối tượng tác động / affected object | `tk1...` |
+| `patient_id` | uuid | No | Internal | FK -> `Patient`, khi entry gắn với một bệnh nhân / when the entry is about a patient - denormalized so Own-scope resolves directly (TASK-016) | `9f1c...` |
 | `reasoning` | string | Yes | Confidential | Chain-of-thought / reasoning | `May 2 hang doi dai; day X-quang xuong sau` |
 | `created_at` | datetime | Yes | Internal | Ghi / logged | `2026-07-17T10:05:00Z` |
 
 **Constraints and invariants**
 
 - Append-only; không actor nào sửa entry đã ghi (BR-23).
+- `patient_id` là optional: entry hệ thống không gắn bệnh nhân nào (vd. block một tool lạ) để trống - Own-scope thất bại đóng (fail-closed) khi không có (TASK-016).
 
 ### `IntakeSession` and `Diagnosis` (summary)
 
 - `IntakeSession`: `id`, `patient_id` (FK), `transcript` (Sensitive PII), `structured_triage` (JSON: specialty, priority_level, constraints; Confidential), `emergency_suspected` (bool, Confidential - cờ do Intake gắn khi nghi red-flag, [BF-05](04-business-flows.md)), `created_at`. Invariant: `transcript` là untrusted content ([NFR-SEC-11](07-non-functional-requirements.md#nfr-security)), không log; `emergency_suspected = true` chặn đặt slot thường cho tới khi nhân viên xác nhận ([FR-01](05-functional-requirements.md#fr-01)).
-- `Diagnosis`: `id`, `appointment_id` (FK), `conditions` (Sensitive PII), `diagnosed_by` (FK bác sĩ), `created_at`. Invariant: chỉ `role_doctor` tạo/sửa (BR-05).
+- `Diagnosis`: `id`, `patient_id` (FK -> `Patient`, denormalized từ `appointment_id` để Own-scope resolve trực tiếp - TASK-016), `appointment_id` (FK), `conditions` (Sensitive PII), `diagnosed_by` (FK bác sĩ), `created_at`. Invariant: chỉ `role_doctor` tạo/sửa (BR-05); `patient_id` phải khớp `Appointment.patient_id` của `appointment_id`.
 
 ## State transitions
 
@@ -335,6 +433,34 @@ stateDiagram-v2
 | `ASSESSED` | `AUTO_RESOLVED` | Ảnh hưởng <= N / impact <= N | Disruption Agent | [BR-17](05-functional-requirements.md#fr-09) |
 | `ASSESSED` | `PENDING_APPROVAL` | Ảnh hưởng > N / impact > N | Disruption Agent | [BR-17](05-functional-requirements.md#fr-09) |
 | `PENDING_APPROVAL` | `APPROVED`/`REJECTED` | Duyệt/từ chối / approve or reject | `role_coordinator` | [BR-22](05-functional-requirements.md#fr-12) |
+
+### `QueueTicket.status`
+
+```mermaid
+stateDiagram-v2
+  [*] --> WAITING : "ticket issued at a desk, by role_coordinator"
+  WAITING --> CALLED : "a free room calls the next number, by role_technician or role_doctor"
+  CALLED --> IN_SERVICE : "patient presents / scans, by role_technician or role_doctor"
+  CALLED --> SKIPPED : "called but absent"
+  WAITING --> SKIPPED : "removed from the queue"
+  SKIPPED --> WAITING : "re-called once the patient turns up"
+  IN_SERVICE --> DONE : "service complete"
+  DONE --> [*]
+```
+
+| From | To | Trigger | Allowed role | Rule |
+|------|----|---------|--------------|------|
+| `WAITING` | `CALLED` | Phòng rảnh gọi số kế / a free room calls the next number | `role_technician`, `role_doctor` | ADR-003 |
+| `CALLED` | `IN_SERVICE` | Bệnh nhân có mặt (quét) / patient presents | `role_technician`, `role_doctor` | ADR-003, [FR-17](05-functional-requirements.md#fr-17) |
+| `CALLED`/`WAITING` | `SKIPPED` | Vắng mặt / passed over | `role_coordinator` | ADR-003 |
+| `SKIPPED` | `WAITING` | Gọi lại / re-called | `role_coordinator` | ADR-003 |
+| `IN_SERVICE` | `DONE` | Hoàn tất / complete | `role_technician`, `role_doctor` | ADR-003 |
+
+<!-- Journey status is DERIVED, never stored (ADR-003): a patient's current state is computed from
+     their active tickets by precedence (IN_SERVICE > CALLED > WAITING > RESULTS_PENDING > IDLE >
+     DONE), so it cannot drift from these ticket state machines. There is no status field on
+     `Patient`. At scale the coordinator dashboard (FR-12) materialises it as a cache-only Redis
+     read-model rebuilt from events, invalidated on every ticket transition - not an authority. -->
 
 ## Persistence notes
 

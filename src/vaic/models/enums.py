@@ -77,3 +77,20 @@ class NotificationChannel(StrEnum):
 class PaymentSubjectType(StrEnum):
     TASK = "TASK"
     APPOINTMENT = "APPOINTMENT"
+
+
+class QueueTicketStatus(StrEnum):
+    """QueueTicket.status - the live position of a numbered ticket (ADR-003)."""
+
+    WAITING = "WAITING"
+    CALLED = "CALLED"  # number announced; patient en route to the room
+    IN_SERVICE = "IN_SERVICE"
+    DONE = "DONE"
+    SKIPPED = "SKIPPED"  # called but absent / passed over
+
+
+class QueueSubjectType(StrEnum):
+    """What a QueueTicket queues for (ADR-003): a doctor consult or a service step."""
+
+    CONSULT = "CONSULT"  # subject_id -> Appointment
+    SERVICE = "SERVICE"  # subject_id -> Task
