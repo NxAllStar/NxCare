@@ -71,7 +71,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-034 | Bind action authz to the authenticated principal: executor/checker/careplan gate must derive actor_role from the FR-18 session, not trust caller-supplied Action.params.actor_role (from TASK-008 review cM7/sM2) | agent-core-dev | TASK-013, TASK-004, TASK-008 | P1 | 2 | Planned |
 | TASK-035 | Link Appointment to owner/slot so the intake capacity guard checks real bookings, not just the owner Task queue (from TASK-007 review B1) | data-modeler | TASK-003, TASK-007 | P2 | 2 | Planned |
 | TASK-036 | Bind intake staff_confirmed/emergency_suspected to the authenticated session + stored triage result instead of caller-supplied booleans (from TASK-007 review B2) | agent-core-dev | TASK-013, TASK-007, TASK-034 | P2 | 2 | Planned |
-| TASK-037 | Guard Action.reasoning free-text field against PII leakage into the audit log (from TASK-007 review, reasoning-PII) | agent-core-dev | TASK-004, TASK-007 | P2 | 2 | Planned |
+| TASK-037 | Guard Action.reasoning free-text field against PII leakage into the audit log (from TASK-007 review, reasoning-PII) | agent-core-dev | TASK-004, TASK-007 | P2 | 2 | Done |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
