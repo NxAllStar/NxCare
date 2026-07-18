@@ -47,4 +47,22 @@ describe('App entry switch (TASK-026: path-based /console mount, patient app unt
     render(<App />);
     expect(screen.getByText(/Đăng nhập để theo dõi lịch khám/)).toBeInTheDocument();
   });
+
+  it('a sibling path merely prefixed by "console" (e.g. /console-room) renders the patient app, not the console (code-reviewer Minor finding)', () => {
+    goTo('/console-room');
+    render(<App />);
+    expect(screen.getByText(/Đăng nhập để theo dõi lịch khám/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('another sibling path (/consoles) also renders the patient app, not the console', () => {
+    goTo('/consoles');
+    render(<App />);
+    expect(screen.getByText(/Đăng nhập để theo dõi lịch khám/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ }),
+    ).not.toBeInTheDocument();
+  });
 });

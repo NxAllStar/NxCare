@@ -99,6 +99,37 @@ describe('ConsoleApp (TASK-026 foundation)', () => {
     ).toBeInTheDocument();
   });
 
+  describe('login honors the originally requested screen (code-reviewer Minor: dead redirect state)', () => {
+    it('requesting a permitted screen while signed out, then logging in, lands back on that screen (not the role default)', async () => {
+      const user = userEvent.setup();
+      goToConsole(screenPath('SCR-04')); // doctor worklist: permitted for doctor, but not doctor's default (SCR-03)
+      render(<ConsoleApp />);
+
+      // No session yet -> redirected to login.
+      expect(await screen.findByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.doctor }));
+
+      expect(await screen.findByRole('heading', { name: SCREEN_HEADING['SCR-04'] })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: SCREEN_HEADING['SCR-03'] })).not.toBeInTheDocument();
+    });
+
+    it('requesting a screen not permitted to the chosen role falls back to that role\'s own default screen, never the forbidden one', async () => {
+      const user = userEvent.setup();
+      goToConsole(screenPath('SCR-06')); // dashboard: not permitted for doctor
+      render(<ConsoleApp />);
+
+      expect(await screen.findByRole('heading', { name: /Đăng nhập nhân viên|Staff login/ })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: ROLE_BUTTON_LABEL.doctor }));
+
+      expect(
+        await screen.findByRole('heading', { name: SCREEN_HEADING[defaultScreenFor('doctor')] }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: SCREEN_HEADING['SCR-06'] })).not.toBeInTheDocument();
+    });
+  });
+
   it('admin reaches SCR-06 directly (coordinator OR admin, not "non-coordinator blocked")', async () => {
     seedSession('admin');
     goToConsole(screenPath('SCR-06'));

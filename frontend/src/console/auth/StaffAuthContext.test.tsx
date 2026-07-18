@@ -53,4 +53,46 @@ describe('StaffAuthContext (TASK-026: demo staff session store, role selector on
     expect(window.sessionStorage.getItem('vaic.session')).toBeNull();
     expect(window.sessionStorage.getItem(STAFF_SESSION_STORAGE_KEY)).not.toBeNull();
   });
+
+  describe('readStoredSession boundary validation (code-reviewer + security-reviewer Minor finding)', () => {
+    it('a stored session with an unknown role is rejected: no session, not a crash', () => {
+      window.sessionStorage.setItem(
+        STAFF_SESSION_STORAGE_KEY,
+        JSON.stringify({ role: 'superadmin', displayName: 'Tampered', issuedAt: new Date().toISOString() }),
+      );
+
+      // Renders without throwing (the bug this proves: an unvalidated cast
+      // reaching `ROLE_SCREEN_ACCESS['superadmin'].includes(...)` elsewhere
+      // in the console would white-screen it with `undefined.includes`).
+      const { result } = renderHook(() => useStaffAuth(), { wrapper });
+      expect(result.current.session).toBeNull();
+    });
+
+    it('malformed (non-JSON) stored session value yields no session', () => {
+      window.sessionStorage.setItem(STAFF_SESSION_STORAGE_KEY, 'not-json{{{');
+
+      const { result } = renderHook(() => useStaffAuth(), { wrapper });
+      expect(result.current.session).toBeNull();
+    });
+
+    it('a stored session missing required fields (no displayName) yields no session', () => {
+      window.sessionStorage.setItem(
+        STAFF_SESSION_STORAGE_KEY,
+        JSON.stringify({ role: 'doctor', issuedAt: new Date().toISOString() }),
+      );
+
+      const { result } = renderHook(() => useStaffAuth(), { wrapper });
+      expect(result.current.session).toBeNull();
+    });
+
+    it('a well-formed stored session for a known role is accepted', () => {
+      window.sessionStorage.setItem(
+        STAFF_SESSION_STORAGE_KEY,
+        JSON.stringify({ role: 'technician', displayName: 'KTV Demo', issuedAt: new Date().toISOString() }),
+      );
+
+      const { result } = renderHook(() => useStaffAuth(), { wrapper });
+      expect(result.current.session?.role).toBe('technician');
+    });
+  });
 });

@@ -27,6 +27,17 @@ import type { DictKey } from '@/i18n';
 
 export type StaffRole = 'doctor' | 'technician' | 'coordinator' | 'admin';
 
+/**
+ * The canonical, exhaustive set of staff roles - the single source other
+ * modules reuse (e.g. validating a role read back from storage) rather than
+ * hardcoding a second copy of this list that can drift from `StaffRole`.
+ */
+export const STAFF_ROLES: readonly StaffRole[] = ['doctor', 'technician', 'coordinator', 'admin'];
+
+export function isStaffRole(value: unknown): value is StaffRole {
+  return typeof value === 'string' && (STAFF_ROLES as readonly string[]).includes(value);
+}
+
 export type ConsoleScreenId = 'SCR-03' | 'SCR-04' | 'SCR-05' | 'SCR-06' | 'SCR-07';
 
 export interface ConsoleScreenDef {
@@ -105,6 +116,12 @@ export function screenDef(id: ConsoleScreenId): ConsoleScreenDef {
 
 export function screenPath(id: ConsoleScreenId): string {
   return screenDef(id).path;
+}
+
+/** Reverse of `screenPath`: the screen whose route is exactly `path`, or
+ * `undefined` if `path` does not match any console screen route. */
+export function screenForPath(path: string): ConsoleScreenId | undefined {
+  return CONSOLE_SCREENS.find((s) => s.path === path)?.id;
 }
 
 /**

@@ -2,9 +2,13 @@ import { PatientCompanionApp } from '@/companion/PatientCompanionApp';
 import { ConsoleApp } from '@/console/ConsoleApp';
 
 /**
- * App root. Path-based entry switch (TASK-026): any path starting with
- * `/console` mounts the hospital-facing web console (its own router,
- * providers, and staff session) instead. Every other path renders the
+ * App root. Path-based entry switch (TASK-026): `/console` or any path
+ * under it (`/console/...`) mounts the hospital-facing web console (its own
+ * router, providers, and staff session) instead - an exact-or-prefix-with-
+ * separator match, so a sibling path like `/console-room` or `/consoles`
+ * does NOT match and falls through to the patient app (matching it would
+ * mount ConsoleApp whose basename="/console" router then matches nothing,
+ * rendering a blank page). Every other path renders the
  * faithful 1:1 reproduction of the owner-supplied "Patient Companion App"
  * design (self-contained demo, VN-only, inside an iPhone frame) - see
  * src/companion/ - exactly as before this task. The earlier routed patient
@@ -13,7 +17,8 @@ import { ConsoleApp } from '@/console/ConsoleApp';
  */
 function App() {
   const isConsole =
-    typeof window !== 'undefined' && window.location.pathname.startsWith('/console');
+    typeof window !== 'undefined' &&
+    (window.location.pathname === '/console' || window.location.pathname.startsWith('/console/'));
   if (isConsole) {
     return <ConsoleApp />;
   }

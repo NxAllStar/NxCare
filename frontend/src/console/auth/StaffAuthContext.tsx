@@ -18,7 +18,7 @@
  * demo staff member of that role.
  */
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import type { StaffRole } from '../access';
+import { isStaffRole, type StaffRole } from '../access';
 
 export const STAFF_SESSION_STORAGE_KEY = 'vaic.console.session';
 
@@ -37,15 +37,37 @@ const DEMO_STAFF_NAME: Record<StaffRole, string> = {
   admin: 'QT Ngô Đức Anh (demo)',
 };
 
+/**
+ * Validates a parsed sessionStorage value against the `StaffSession` shape
+ * before it is trusted (security-privacy.md "validation at the boundary";
+ * ASVS v5.0.0-1.2.5 boundary/input validation). A hand-edited or corrupted
+ * value - e.g. an unknown `role` such as "superadmin" - must never reach
+ * `ROLE_SCREEN_ACCESS[role]` downstream, where an unrecognised key would
+ * white-screen the console (`undefined.includes` throws).
+ */
+function isValidStaffSession(value: unknown): value is StaffSession {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    isStaffRole(candidate.role) &&
+    typeof candidate.displayName === 'string' &&
+    candidate.displayName.length > 0 &&
+    typeof candidate.issuedAt === 'string' &&
+    candidate.issuedAt.length > 0
+  );
+}
+
 function readStoredSession(): StaffSession | null {
   if (typeof window === 'undefined') return null;
   const raw = window.sessionStorage.getItem(STAFF_SESSION_STORAGE_KEY);
   if (!raw) return null;
+  let parsed: unknown;
   try {
-    return JSON.parse(raw) as StaffSession;
+    parsed = JSON.parse(raw);
   } catch {
     return null;
   }
+  return isValidStaffSession(parsed) ? parsed : null;
 }
 
 interface StaffAuthContextValue {
