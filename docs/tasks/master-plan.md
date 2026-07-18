@@ -43,7 +43,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-014 | Rounded-app features: reschedule/cancel, notifications center, settings+VI/EN, patient search (FR-19..22) | frontend-ui-dev | TASK-011, TASK-013 | P2 | 2 | Planned |
 | TASK-015 | Design system + app shell (Tailwind + shadcn/ui, nav, i18n) per spec 10 | frontend-ui-dev | TASK-011 | P2 | 2 | Planned |
 | TASK-016 | Denormalize a resolvable patient link onto Diagnosis/ServiceOrder/Slot/Payment/AuditLogEntry so Own-scope covers them (from TASK-013) | data-modeler | TASK-003 | P2 | 2 | Planned |
-| TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Planned |
+| TASK-017 | Brainstorm: queue-position / ticket transparency model (patients-ahead + doctor anticipated load) -> ADR + candidate FR (OI-22) | brainstormer | - | P2 | 2 | Done |
 
 <!-- Update the Status column on EVERY status change, in the same change as the task file. -->
 
