@@ -35,7 +35,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-006 | SimPy simulator world + synthetic seed + metrics harness | simulator-dev | TASK-003 | P0 | 1 | Done |
 | TASK-007 | Intake + slot recommendation + emergency escalation (FR-01, FR-02, BF-05) | intake-dev | TASK-004, TASK-005 | P1 | 2 | Done |
 | TASK-008 | Care Plan + proceed gate + slot allocation (FR-03, FR-04, FR-05, FR-08) | careplan-dev | TASK-004, TASK-006 | P1 | 2 | Done |
-| TASK-009 | Journey + notifications + patient-code scan + SMS (FR-06, FR-11, FR-15, FR-17) | Long | TASK-008 | P1 | 2 | Active |
+| TASK-009 | Journey + notifications + patient-code scan + SMS (FR-06, FR-11, FR-15, FR-17) | Long | TASK-008 | P1 | 2 | Done |
 | TASK-010 | Coordinator + Disruption tiered autonomy (FR-09, FR-10) | agent-core-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
 | TASK-011 | Frontend: chat, timeline, coordinator dashboard (FR-12 + screens) - SUPERSEDED by TASK-021..024 (patient-only re-scope, 2026-07-18) | frontend-ui-dev | TASK-007, TASK-008 | P1 | 2 | Pending |
 | TASK-012 | A/B eval vs FIFO baseline + demo script + metrics | simulator-dev | TASK-010, TASK-011 | P2 | 3 | Planned |
@@ -52,7 +52,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-023 | Patient P1 screens: notifications (SCR-09), settings (SCR-10), journey-step, results, meds, recovery, billing (display-only), family, prep | frontend-ui-dev | TASK-022 | P2 | 2 | Done |
 | TASK-024 | Patient UI QA: Vitest suite + Playwright golden-path e2e + code/security review gates + secret-scan | qa-test | TASK-022, TASK-023 | P1 | 2 | Planned |
 | TASK-025 | Patient app visual upgrade to iOS-native design (all screens + shell) per owner design | frontend-ui-dev | TASK-023 | P2 | 2 | Done |
-| TASK-026 | Spec FR-23 dynamic queue-driven load-balanced routing (per-station wait, dynamic generation, rebalance-after-each-step) | ba-analyst | - | P1 | 2 | Active |
+| TASK-026 | Spec FR-23 dynamic queue-driven load-balanced routing (per-station wait, dynamic generation, rebalance-after-each-step) | ba-analyst | - | P1 | 2 | Done |
 | TASK-027 | FR-23 queue-driven route generation (care-plan half) | careplan-dev | TASK-008, TASK-026, TASK-005 | P1 | 2 | Planned |
 | TASK-028 | FR-23 after-each-step rebalance (journey half) | journey-dev | TASK-009, TASK-027, TASK-026 | P1 | 2 | Planned |
 | TASK-029 | Minimal coordinator console: re-plan approval (FR-09) + A/B metrics (scope-locked) | frontend-ui-dev | TASK-010, TASK-012 | P2 | 3 | Planned |
