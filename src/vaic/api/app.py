@@ -13,6 +13,20 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from ..models import AuditLogEntry, Diagnosis, ScanEvent, ServiceOrder, ServiceType, Slot
+from . import (
+    appointment_routes,
+    auth_routes,
+    careplan_routes,
+    dashboard_routes,
+    disruption_routes,
+    forecast_routes,
+    journey_routes,
+    notifications_routes,
+    patient_routes,
+    staff_routes,
+)
+from .crud import build_entity_router
 from .demo_state import build_repository, seed_demo_resources
 from .intake_routes import build_intake_router
 
@@ -30,13 +44,34 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["*"],
     )
 
     repo = build_repository()
     seed_demo_resources(repo)
     app.include_router(build_intake_router(repo))
+
+    # Native-async routers (AsyncPostgresRepository) and sync-adapter-bridged routers (existing
+    # agents/* business logic) - see the API design plan (docs/tasks) for the async/sync split.
+    app.include_router(auth_routes.router)
+    app.include_router(patient_routes.router)
+    app.include_router(appointment_routes.router)
+    app.include_router(careplan_routes.router)
+    app.include_router(journey_routes.router)
+    app.include_router(notifications_routes.router)
+    app.include_router(forecast_routes.router)
+    app.include_router(disruption_routes.router)
+    app.include_router(dashboard_routes.router)
+    app.include_router(staff_routes.router)
+
+    # Reference/log entities with no special business rule (DRY: one factory, see api/crud.py).
+    app.include_router(build_entity_router(ServiceType, "/service-types", ["service-types"]))
+    app.include_router(build_entity_router(Slot, "/slots-log", ["slots"]))
+    app.include_router(build_entity_router(Diagnosis, "/diagnoses-log", ["diagnoses"]))
+    app.include_router(build_entity_router(ServiceOrder, "/service-orders", ["service-orders"]))
+    app.include_router(build_entity_router(ScanEvent, "/scan-events", ["scan-events"]))
+    app.include_router(build_entity_router(AuditLogEntry, "/audit-log", ["audit-log"]))
 
     @app.get("/health")
     def health() -> dict[str, str]:

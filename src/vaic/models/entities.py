@@ -19,6 +19,7 @@ from .enums import (
     DisruptionStatus,
     ExecutionStatus,
     NotificationChannel,
+    PatientLocationStatus,
     PaymentStatus,
     PaymentSubjectType,
     PriorityLevel,

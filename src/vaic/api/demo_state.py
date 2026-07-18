@@ -24,7 +24,12 @@ DEMO_OWNER_BUSY = UUID("00000000-0000-0000-0000-000000000002")
 def build_repository() -> Repository:
     backend = os.environ.get("VAIC_STATE_BACKEND", "memory")
     if backend == "redis":
-        url = os.environ.get("VAIC_REDIS_URL", "redis://localhost:6379/0")
+        # VAIC_REDIS_URL takes precedence; REDIS_URL is the name .env.example documents for the
+        # hosted Redis/Valkey instance - accept either so a real deployment's .env is not silently
+        # ignored in favor of the localhost default.
+        url = os.environ.get("VAIC_REDIS_URL") or os.environ.get(
+            "REDIS_URL", "redis://localhost:6379/0"
+        )
         return RedisRepository(url)
     return InMemoryRepository()
 
