@@ -69,3 +69,5 @@ Thumbs.db
 #  you want to keep the .html design file in the repo)
 # ============================================================
 Patient Companion App.html
+
+**/__pycache__/
