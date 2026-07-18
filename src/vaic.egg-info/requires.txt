@@ -1,0 +1,7 @@
+pydantic>=2.7
+redis>=5.0
+simpy>=4.1
+
+[dev]
+pytest>=8.0
+ruff>=0.5

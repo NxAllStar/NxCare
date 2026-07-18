@@ -1,0 +1,98 @@
+{
+  "$description": "Design tokens for Patient Companion App (Palantir-minimal, clinical, white-first). Extracted from Patient Companion App.dc.html.",
+  "color": {
+    "neutral": {
+      "0": "#FFFFFF",
+      "50": "#F7F8F9",
+      "100": "#EDEEF0",
+      "200": "#E2E5E8",
+      "300": "#C7CDD2",
+      "400": "#9BA3AB",
+      "500": "#5A626B",
+      "900": "#12151A"
+    },
+    "primary": {
+      "description": "Calm clinical teal/blue — trustworthy brand accent",
+      "50": "#E6F1F4",
+      "100": "#CCE3E9",
+      "300": "#5AA7B8",
+      "500": "#0E7490",
+      "600": "#0B5C73",
+      "700": "#08404F"
+    },
+    "status": {
+      "success": { "base": "#2F9D66", "bg": "rgba(47,157,102,0.10)", "label": "done / available" },
+      "warning": { "base": "#D9902B", "bg": "rgba(217,144,43,0.10)", "label": "waiting / pending" },
+      "danger":  { "base": "#E5484D", "bg": "rgba(229,72,77,0.08)",  "label": "disruption / blocked" },
+      "info":    { "base": "#0E7490", "bg": "rgba(14,116,144,0.10)", "label": "in-progress (uses primary)" }
+    },
+    "heatmap": {
+      "description": "Sequential load scale, green (low) → amber (medium) → red (high)",
+      "1": "#2F9D66",
+      "2": "#6BAE55",
+      "3": "#C7A93D",
+      "4": "#D9902B",
+      "5": "#DE6A3C",
+      "6": "#E5484D"
+    },
+    "surface": {
+      "page": "#EDEEF0",
+      "card": "#FFFFFF",
+      "cardMuted": "#F7F8F9",
+      "border": "#E2E5E8",
+      "overlay": "rgba(0,0,0,0.35)"
+    },
+    "text": {
+      "primary": "#12151A",
+      "secondary": "#5A626B",
+      "tertiary": "#9BA3AB",
+      "onPrimary": "#FFFFFF",
+      "link": "#0E7490",
+      "linkHover": "#0B5C73"
+    },
+    "dark": {
+      "description": "Stub for future dark mode — not used in current screens",
+      "page": "#0B0D10",
+      "card": "#15181C",
+      "cardMuted": "#1B1F24",
+      "border": "#2A2F35",
+      "textPrimary": "#F2F3F4",
+      "textSecondary": "#9BA3AB"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": "'Inter', -apple-system, system-ui, sans-serif",
+      "mono": "'IBM Plex Mono', monospace",
+      "monoUsage": "numerals only — ETAs, queue counts, currency, OTP digits, IDs (tabular-nums)"
+    },
+    "fontWeight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700, "extrabold": 800 },
+    "fontSize": {
+      "xs": 11, "sm": 12, "body-sm": 13, "body": 14, "body-lg": 15,
+      "md": 16, "lg": 17, "xl": 18, "2xl": 20, "3xl": 22, "4xl": 24, "5xl": 26, "6xl": 40
+    },
+    "lineHeight": { "tight": 1.2, "normal": 1.4, "relaxed": 1.5, "loose": 1.6 }
+  },
+  "spacing": { "1": 4, "2": 6, "3": 8, "4": 10, "5": 12, "6": 14, "7": 16, "8": 18, "9": 20, "10": 22, "12": 24, "14": 28, "16": 32 },
+  "radius": { "sm": 10, "md": 12, "lg": 14, "xl": 16, "2xl": 18, "3xl": 20, "4xl": 22, "5xl": 24, "pill": 999 },
+  "shadow": {
+    "card": "0 1px 3px rgba(0,0,0,0.06)",
+    "raised": "0 8px 24px rgba(14,116,144,0.25)",
+    "fab": "0 10px 24px rgba(14,116,144,0.35)",
+    "sheet": "0 -4px 24px rgba(0,0,0,0.12)"
+  },
+  "motion": {
+    "durationFast": "150ms",
+    "durationBase": "200ms",
+    "durationSlow": "300ms",
+    "easing": "ease",
+    "pulse": "1.6s infinite"
+  },
+  "component": {
+    "tabBar": { "height": 74, "activeColor": "#0E7490", "inactiveColor": "#9BA3AB" },
+    "fab": { "size": 58, "bg": "#0E7490" },
+    "toggle": { "trackOn": "#0E7490", "trackOff": "#C7CDD2", "width": 48, "height": 28 },
+    "input": { "height": 52, "bg": "#F7F8F9", "border": "#E2E5E8" },
+    "buttonPrimary": { "height": 56, "bg": "#0E7490", "text": "#FFFFFF", "radius": 999 }
+  }
+}

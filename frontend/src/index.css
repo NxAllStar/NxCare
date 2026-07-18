@@ -1,0 +1,180 @@
+/* ============================================================
+   Patient Companion — Design Tokens (shadcn/ui convention)
+   App CSS entry, imported from src/main.tsx. Pairs with
+   tailwind.config.ts. Source of truth for the raw values is
+   ../design-tokens.json - keep both in sync when a token changes.
+   Palette: calm clinical neutrals + one trustworthy teal/blue
+   primary, semantic status colors, green→amber→red load heatmap.
+   Fonts: Inter (humanist sans) + IBM Plex Mono (tabular numerals
+   for ETAs/queues), self-hosted via @fontsource - see below.
+   ============================================================ */
+
+/* Latin + Vietnamese subsets only (VI default, EN toggle - NFR-USE-03).
+   Avoids pulling every unicode-range subset @fontsource ships by default. */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/inter/vietnamese-400.css";
+@import "@fontsource/inter/vietnamese-500.css";
+@import "@fontsource/inter/vietnamese-600.css";
+@import "@fontsource/inter/vietnamese-700.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/vietnamese-400.css";
+@import "@fontsource/ibm-plex-mono/vietnamese-500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* --- shadcn core (HSL triplets, no hsl() wrapper) --- */
+    --background: 210 11% 93%;        /* #EDEEF0 app canvas */
+    --foreground: 210 16% 9%;         /* #12151A text */
+
+    --card: 0 0% 100%;                /* #FFFFFF */
+    --card-foreground: 210 16% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 16% 9%;
+
+    --primary: 193 82% 31%;           /* #0E7490 trustworthy teal/blue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 97%;         /* #F7F8F9 muted surface */
+    --secondary-foreground: 210 16% 9%;
+
+    --muted: 210 20% 97%;             /* #F7F8F9 */
+    --muted-foreground: 210 8% 39%;   /* #5A626B */
+
+    --accent: 193 82% 31%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 358 76% 59%;       /* #E5484D red = disruption/blocked */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 14% 90%;            /* #E2E5E8 */
+    --input: 210 14% 90%;
+    --ring: 193 82% 31%;              /* focus ring = primary */
+
+    --radius: 1rem;                   /* 16px base; cards use --radius, pills 999px */
+
+    /* --- Semantic status (recur everywhere) --- */
+    --success: 149 54% 40%;           /* #2F9D66 green = done/available */
+    --success-foreground: 0 0% 100%;
+    --warning: 36 69% 51%;            /* #D9902B amber = waiting/pending */
+    --warning-foreground: 0 0% 100%;
+    --danger: 358 76% 59%;            /* #E5484D red = disruption/blocked */
+    --danger-foreground: 0 0% 100%;
+    --info: 193 82% 31%;              /* #0E7490 blue = in-progress */
+    --info-foreground: 0 0% 100%;
+
+    /* --- Sequential load heatmap (green → amber → red) --- */
+    --heat-1: 149 54% 40%;            /* #2F9D66 lowest load */
+    --heat-2: 92 34% 51%;             /* #6BAE55 */
+    --heat-3: 47 55% 51%;             /* #C7A93D */
+    --heat-4: 36 69% 51%;             /* #D9902B */
+    --heat-5: 18 70% 55%;             /* #DE6A3C */
+    --heat-6: 358 76% 59%;            /* #E5484D highest load */
+
+    /* --- Neutral ramp (clinical greys) --- */
+    --neutral-50: 210 20% 97%;
+    --neutral-100: 210 11% 93%;
+    --neutral-200: 210 14% 90%;
+    --neutral-300: 208 11% 80%;
+    --neutral-400: 210 8% 64%;
+    --neutral-500: 210 8% 39%;
+    --neutral-900: 210 16% 9%;
+  }
+
+  .dark {
+    --background: 210 20% 5%;         /* #0B0D10 */
+    --foreground: 210 12% 95%;        /* #F2F3F4 */
+
+    --card: 210 13% 10%;             /* #15181C */
+    --card-foreground: 210 12% 95%;
+
+    --popover: 210 13% 10%;
+    --popover-foreground: 210 12% 95%;
+
+    --primary: 193 60% 45%;
+    --primary-foreground: 210 20% 5%;
+
+    --secondary: 213 12% 12%;        /* #1B1F24 */
+    --secondary-foreground: 210 12% 95%;
+
+    --muted: 213 12% 12%;
+    --muted-foreground: 210 8% 64%;
+
+    --accent: 193 60% 45%;
+    --accent-foreground: 210 20% 5%;
+
+    --destructive: 358 66% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 12% 18%;           /* #2A2F35 */
+    --input: 210 12% 18%;
+    --ring: 193 60% 45%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Tabular numerals for ETAs, queue counts, currency, IDs */
+  .tabular-nums,
+  time, [data-numeric] {
+    font-feature-settings: 'tnum' 1;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ============================================================
+   Motion + safe-area utilities (iOS-native design language).
+   Enter animations are subtle and respect reduced-motion. The
+   keyframes live at the top level (not inside @layer) so the
+   animation utilities below can reference them.
+   ============================================================ */
+@keyframes vaicFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes vaicPulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.72); }
+}
+@keyframes vaicToastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes vaicSheetIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .animate-fade-up { animation: vaicFadeUp 0.28s ease both; }
+  .animate-pulse-dot { animation: vaicPulseDot 1.6s ease-in-out infinite; }
+  .animate-toast-in { animation: vaicToastIn 0.2s ease both; }
+  .animate-sheet-in { animation: vaicSheetIn 0.22s ease both; }
+
+  /* iOS safe-area insets - bottom nav sits above the home indicator. */
+  .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
+  .pt-safe { padding-top: calc(env(safe-area-inset-top) + 0.5rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-pulse-dot,
+  .animate-toast-in,
+  .animate-sheet-in {
+    animation: none !important;
+  }
+}
