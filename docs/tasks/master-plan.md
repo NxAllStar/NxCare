@@ -64,7 +64,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-027 | FR-23 queue-driven route generation (care-plan half) | careplan-dev | TASK-008, TASK-026, TASK-005 | P1 | 2 | Planned |
 | TASK-028 | FR-23 after-each-step rebalance (journey half) | journey-dev | TASK-009, TASK-027, TASK-026 | P1 | 2 | Planned |
 | TASK-029 | Minimal coordinator console: re-plan approval (FR-09) + A/B metrics (scope-locked) | frontend-ui-dev | TASK-010, TASK-012 | P2 | 3 | Planned |
-| TASK-030 | CI pipeline (GitHub Actions): tests + lint on every PR (deferred, build later) | devops | - | P2 | 3 | Planned |
+| TASK-030 | CI pipeline (GitHub Actions): tests + lint on every PR (deferred, build later) | devops | - | P2 | 3 | Done |
 | TASK-031 | Enforce the denormalized patient_id invariant at write boundaries + thread patient context into audit (from TASK-016 review) | agent-core-dev | TASK-016 | P2 | 2 | Planned |
 | TASK-032 | Model fasting-safety + inter-service dependencies (breaks_fasting on ServiceType, dependency edges) so sequencing honors BR-08 dependencies and never interleaves a fast-breaking step (from TASK-008 review cM8/cM9) | data-modeler | TASK-003, TASK-008 | P2 | 2 | Planned |
 | TASK-033 | Atomic slot allocation in the state layer: make capacity check-and-insert atomic to remove the TOCTOU race (demo-safe on in-memory store; real risk on durable store OI-15) (from TASK-008 review cM2) | data-modeler | TASK-008 | P2 | 3 | Planned |
