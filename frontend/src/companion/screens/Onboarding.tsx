@@ -40,7 +40,7 @@ export function Onboarding({ s, a }: ScreenProps) {
               <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: '#12151A' }}>Nx<span style={{ color: PRIMARY }}>Care</span></span>
             </div>
             <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.01em' }}>Sức khỏe trong tầm tay</div>
-            <div style={{ fontSize: 16, color: MUTED, marginTop: 8, lineHeight: 1.5 }}>Đăng nhập để theo dõi lịch khám, kết quả và lộ trình của chị và người thân.</div>
+            <div style={{ fontSize: 16, color: MUTED, marginTop: 8, lineHeight: 1.5 }}>Đăng nhập để theo dõi lịch khám, kết quả và lộ trình của bạn và người thân.</div>
           </div>
 
           <div>
@@ -75,7 +75,6 @@ export function Onboarding({ s, a }: ScreenProps) {
         <div style={{ flexShrink: 0, padding: '28px 24px 32px', display: 'flex', flexDirection: 'column', gap: 20, animation: 'vaicFadeUp .3s ease' }}>
           <div>
             <div style={{ fontSize: 26, fontWeight: 700 }}>Hồ sơ sức khỏe</div>
-            <div style={{ fontSize: 16, color: MUTED, marginTop: 8, lineHeight: 1.5 }}>Giúp AI cảnh báo đúng khi kê đơn hoặc gợi ý.</div>
           </div>
           <Field label="Họ và tên"><div style={{ height: 52, borderRadius: 14, background: '#F7F8F9', border: '1px solid #E2E5E8', display: 'flex', alignItems: 'center', padding: '0 16px', fontSize: 16, fontWeight: 600 }}>{PATIENT_NAME}</div></Field>
           <div style={{ display: 'flex', gap: 12 }}>

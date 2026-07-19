@@ -123,7 +123,7 @@ export function AppointmentsScreen({ s, a }: ScreenProps) {
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ width: 30, height: 30, borderRadius: 999, background: TEAL, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" /></svg></div>
-          <div style={{ background: '#F7F8F9', borderRadius: 16, padding: '12px 14px', fontSize: 15, lineHeight: 1.5, maxWidth: '80%' }}>Chào chị, chị đang thấy khó chịu ở đâu? Mô tả càng cụ thể, em gợi ý càng đúng.</div>
+          <div style={{ background: '#F7F8F9', borderRadius: 16, padding: '12px 14px', fontSize: 15, lineHeight: 1.5, maxWidth: '80%' }}>Chào bạn, bạn đang thấy khó chịu ở đâu? Mô tả càng cụ thể,tôigợi ý càng đúng.</div>
         </div>
 
         {s.intakeStep === 0 && (
@@ -136,7 +136,7 @@ export function AppointmentsScreen({ s, a }: ScreenProps) {
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <div style={{ width: 30, height: 30, borderRadius: 999, background: TEAL, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" /></svg></div>
               <div style={{ background: '#F7F8F9', borderRadius: 16, padding: 14, fontSize: 15, lineHeight: 1.5, maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div>Với triệu chứng này, em gợi ý <b>chuyên khoa Ngoại tổng quát</b> — hiện đang ít đông.</div>
+                <div>Với triệu chứng này,tôigợi ý <b>chuyên khoa Ngoại tổng quát</b> — hiện đang ít đông.</div>
                 <div style={{ background: '#fff', borderRadius: 12, padding: '10px 12px', fontWeight: 700 }}>10:15 hôm nay · Ngoại tổng quát</div>
                 <div style={{ background: '#fff', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#9BA3AB', textTransform: 'uppercase' }}>Hồ sơ gửi kèm bác sĩ</div>

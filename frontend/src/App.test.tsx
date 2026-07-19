@@ -26,7 +26,7 @@ describe('App entry switch (TASK-026: path-based /console mount, patient app unt
   it('the ?home=1 demo shortcut still opens the in-hospital live-companion home', () => {
     goTo('/?home=1');
     render(<App />);
-    expect(screen.getByText(/Đang đồng hành cùng chị/)).toBeInTheDocument();
+    expect(screen.getByText(/Đang đồng hành cùng bạn/)).toBeInTheDocument();
   });
 
   it('renders the console login when the path starts with /console', () => {

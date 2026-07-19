@@ -122,7 +122,7 @@ export function RecordsScreen({ s, a }: ScreenProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'vaicFadeUp .25s ease' }}>
         <div style={{ border: `1px solid ${BORDER}`, borderRadius: 16, padding: 16, background: '#F7F8F9', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: TEAL }}>Trợ lý hỏi thăm</div>
-          <div style={{ fontSize: 16, fontWeight: 600 }}>Chị có thấy đỡ đau hơn không?</div>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>Bạn có thấy đỡ đau hơn không?</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={a.recoveryBetter} style={{ flex: 1, height: 42, border: 'none', borderRadius: 12, background: '#2F9D66', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Đỡ nhiều</button>
             <button onClick={a.recoveryWorse} style={{ flex: 1, height: 42, border: '1px solid #E5484D', borderRadius: 12, background: '#fff', color: '#E5484D', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Vẫn đau</button>

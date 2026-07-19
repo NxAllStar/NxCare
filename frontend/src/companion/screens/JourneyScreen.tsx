@@ -23,7 +23,7 @@ export function JourneyScreen({ s, a }: ScreenProps) {
 
         <button onClick={a.toggleWhy} style={{ alignSelf: 'flex-start', height: 38, padding: '0 14px', borderRadius: 999, border: '1px solid #E2E5E8', background: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Vì sao thứ tự này?</button>
         {s.whyOpen && (
-          <div style={{ fontSize: 14, color: '#5A626B', lineHeight: 1.5, background: 'rgba(37,99,235,.06)', borderRadius: 14, padding: 14 }}>X-quang và siêu âm đều ở tầng 1, gần khu chờ hiện tại nên làm trước để chị đỡ di chuyển. Khám lại với bác sĩ để cuối vì cần đủ hai kết quả này.</div>
+          <div style={{ fontSize: 14, color: '#5A626B', lineHeight: 1.5, background: 'rgba(37,99,235,.06)', borderRadius: 14, padding: 14 }}>X-quang và siêu âm đều ở tầng 1, gần khu chờ hiện tại nên làm trước để bạn đỡ di chuyển. Khám lại với bác sĩ để cuối vì cần đủ hai kết quả này.</div>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
