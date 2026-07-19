@@ -1,12 +1,14 @@
 /**
  * LoginPage - SCR-08 Login, patient path (FR-18).
  *
- * Demo auth only (see src/lib/api/session.ts): a patient code + password
- * form, plus a quick-select of demo accounts. A failed login always shows
- * the SAME generic message, whether the patient code does not exist or the
- * password is wrong - no account enumeration (spec 10 SCR-08 States > Error).
+ * Real auth (see src/lib/api/session.ts): a patient code + password form,
+ * plus a quick-select of demo accounts sourced from `GET /auth/demo-accounts`
+ * (only patients that already have a real `password_hash` in Postgres show
+ * up here). A failed login always shows the SAME generic message, whether
+ * the patient code does not exist or the password is wrong - no account
+ * enumeration (spec 10 SCR-08 States > Error).
  */
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import { listDemoAccounts } from '@/lib/api/session';
@@ -15,10 +17,9 @@ import { Button } from '@/components/primitives';
 import { HeartPulseIcon } from '@/components/icons';
 import { useI18n } from '@/i18n';
 
-const DEMO_ACCOUNTS = listDemoAccounts();
 // Demo-only convenience: the quick-select buttons need a password to submit
-// with, mirroring src/lib/api/session.ts DEMO_CREDENTIALS. Not a real
-// credential - there is no production auth in this build (FR-18 demo scope).
+// with. Not a real credential requirement - `GET /auth/demo-accounts` only
+// lists patients seeded with this password (see `demo_seed.py`).
 const DEMO_PASSWORD = 'demo1234';
 
 export function LoginPage() {
@@ -30,6 +31,21 @@ export function LoginPage() {
   const [patientCode, setPatientCode] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [demoAccounts, setDemoAccounts] = useState<Array<{ patientCode: string; displayName: string }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listDemoAccounts()
+      .then((accounts) => {
+        if (!cancelled) setDemoAccounts(accounts);
+      })
+      .catch(() => {
+        // Best-effort convenience list only - a failure here should not block manual login.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (session) {
     const redirectTo = location.state?.from && location.state.from !== '/login' ? location.state.from : '/home';
@@ -125,7 +141,7 @@ export function LoginPage() {
           <span className="h-px flex-1 bg-border" />
         </div>
         <div className="flex flex-col gap-2">
-          {DEMO_ACCOUNTS.map((account) => (
+          {demoAccounts.map((account) => (
             <button
               key={account.patientCode}
               type="button"

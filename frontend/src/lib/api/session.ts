@@ -1,17 +1,21 @@
 /**
- * Mock authentication/session stub (FR-18, patient path only - TASK-021).
+ * Real authentication/session client (FR-18, patient path).
  *
- * No backend exists. This module simulates a login call with latency and a
- * failure mode, and is the ONLY place demo credentials live. Every export
- * below is a stand-in for a future real endpoint.
+ * Backs onto `src/vaic/api/auth_routes.py` via `apiFetch` (`client.ts`). `login` exchanges
+ * `patientCode`/`password` for a bearer token (`POST /auth/login`), stores it with
+ * `setAuthToken`, then hydrates the full `Patient` record (`GET /patients/:id`) so the rest of
+ * the app can render a name/priority level without a second round trip on every screen.
  *
- * Security note (spec 10 SCR-08 "Error" state): a failed login returns the
- * SAME generic error regardless of whether the patient code exists - this
- * is deliberate, not an oversight. Never branch the error message on
- * "code not found" vs "wrong password" (no account enumeration).
+ * This patient app only ever accepts `Role.PATIENT` accounts - a successful login for any other
+ * role (e.g. a doctor's `Resource.username`) is treated the same as invalid credentials, since
+ * there is no patient record to hydrate a `Session` from here.
+ *
+ * Security note (spec 10 SCR-08 "Error" state): a failed login returns the SAME generic error
+ * regardless of whether the patient code exists or the role is wrong - this mirrors the backend's
+ * own no-enumeration behavior (`auth_routes.py`).
  */
 
-import { DEMO_PATIENTS } from './fixtures';
+import { apiFetch, setAuthToken } from './client';
 import type { Patient } from './types';
 
 export interface Session {
@@ -20,16 +24,13 @@ export interface Session {
   issuedAt: string;
 }
 
-interface DemoCredential {
-  patientCode: string;
-  password: string;
+interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  role: string;
+  patientId: string | null;
+  resourceId: string | null;
 }
-
-// Synthetic demo credentials only - never real accounts (agent-guardrails.md).
-const DEMO_CREDENTIALS: DemoCredential[] = [
-  { patientCode: 'BN-000123', password: 'demo1234' },
-  { patientCode: 'BN-000456', password: 'demo1234' },
-];
 
 export class InvalidCredentialsError extends Error {
   constructor() {
@@ -40,40 +41,47 @@ export class InvalidCredentialsError extends Error {
   }
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * TODO: replace with a real API call (FR-18 authentication and session).
- * Demo-only: validates against the in-memory DEMO_CREDENTIALS list and
- * returns a mock session for the matching patient.
- */
+/** Real API call: `POST /auth/login` then `GET /patients/:id` to hydrate the session. */
 export async function login(patientCode: string, password: string): Promise<Session> {
-  await delay(150);
-
-  const trimmedCode = patientCode.trim();
-  const credential = DEMO_CREDENTIALS.find((c) => c.patientCode === trimmedCode);
-  const patient = DEMO_PATIENTS.find((p) => p.patientCode === trimmedCode);
-
-  // Same failure for "no such code" and "wrong password" - see class doc.
-  if (!credential || !patient || credential.password !== password) {
+  let auth: LoginResponse;
+  try {
+    auth = await apiFetch<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: { patientCode: patientCode.trim(), password },
+    });
+  } catch {
     throw new InvalidCredentialsError();
   }
 
-  return {
-    patient,
-    role: 'patient',
-    issuedAt: new Date().toISOString(),
-  };
+  if (auth.role !== 'role_patient' || !auth.patientId) {
+    throw new InvalidCredentialsError();
+  }
+
+  setAuthToken(auth.accessToken);
+
+  try {
+    const patient = await apiFetch<Patient>(`/patients/${auth.patientId}`);
+    return {
+      patient,
+      role: 'patient',
+      issuedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    setAuthToken(null);
+    throw error;
+  }
 }
 
-/** TODO: replace with a real API call that invalidates the server-side session (FR-18). */
+/** Real API call: `POST /auth/logout` (stateless server-side - see `auth_routes.py`), then drops the local token. */
 export async function logout(): Promise<void> {
-  await delay(50);
+  try {
+    await apiFetch<void>('/auth/logout', { method: 'POST' });
+  } finally {
+    setAuthToken(null);
+  }
 }
 
-/** Quick-select demo accounts for the SCR-08 "account or role selector" - demo/local only. */
-export function listDemoAccounts(): Array<{ patientCode: string; displayName: string }> {
-  return DEMO_PATIENTS.map((p) => ({ patientCode: p.patientCode, displayName: p.fullName }));
+/** Real API call: `GET /auth/demo-accounts` - quick-select demo accounts for the SCR-08 selector. */
+export async function listDemoAccounts(): Promise<Array<{ patientCode: string; displayName: string }>> {
+  return apiFetch<Array<{ patientCode: string; displayName: string }>>('/auth/demo-accounts');
 }

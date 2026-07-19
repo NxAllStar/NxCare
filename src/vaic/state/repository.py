@@ -11,8 +11,8 @@ from abc import ABC, abstractmethod
 from typing import TypeVar
 from uuid import UUID
 
-from ..models.entities import PatientLocation, Task, _Base
-from ..models.enums import ExecutionStatus, PatientLocationStatus
+from ..models.entities import Task, _Base
+from ..models.enums import ExecutionStatus
 
 T = TypeVar("T", bound=_Base)
 
@@ -56,10 +56,3 @@ def owner_load_minutes(repo: Repository, owner_id: UUID) -> int:
 
 def matches(task: Task, status: ExecutionStatus) -> bool:  # small helper for readability in callers
     return task.execution_status is status
-
-
-def room_occupancy(repo: Repository, resource_id: UUID) -> int:
-    """Count of patients currently AT_ROOM at `resource_id`, for the room-occupancy dashboard."""
-    return len(
-        repo.list(PatientLocation, current_resource_id=resource_id, status=PatientLocationStatus.AT_ROOM)
-    )

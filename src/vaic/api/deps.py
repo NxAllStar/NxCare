@@ -1,9 +1,10 @@
 """Shared FastAPI dependencies for the new routers: store access, pagination, and auth.
 
-Auth is JWT-based (FR-18): `POST /auth/login` verifies a username/password against the real
-`account_credentials` table (`auth/credential_store.py`, bcrypt-hashed) and issues a short-lived
-signed token (`auth/jwt_tokens.py`); `get_current_account` decodes it and re-reads the account by
-id, natively async - no server-side session record, no sync bridge needed for auth at all.
+Auth is JWT-based (FR-18): `POST /auth/login` (`auth_routes.py`) verifies a username/password
+directly against `Patient.password_hash`/`Resource.password_hash` (bcrypt,
+`auth/password_login.py`) and issues a short-lived signed token whose claims carry the resolved
+account (`auth/jwt_tokens.py`). `get_current_account` here just decodes it - no server-side
+session record, no Postgres round-trip per request at all.
 
 Domain data goes through the new `AsyncPostgresRepository` (native `await`, no bridge) for
 direct-CRUD routes, or through `PostgresRepositorySyncAdapter` (see `state/sql/sync_adapter.py`)
@@ -19,14 +20,11 @@ from __future__ import annotations
 
 from fastapi import Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from starlette.concurrency import run_in_threadpool
 
 from ..auth import Account, Unauthorized
-from ..auth.credential_store import get_account_by_id
 from ..auth.jwt_tokens import decode_access_token
 from ..state.sql.repository import AsyncPostgresRepository
 from ..state.sql.sync_adapter import PostgresRepositorySyncAdapter
-from .demo_seed import ensure_demo_seed
 
 bearer_scheme = HTTPBearer(auto_error=False, description="Token from POST /auth/login")
 
@@ -71,18 +69,9 @@ def bearer_token(creds: HTTPAuthorizationCredentials | None) -> str:
 async def get_current_account(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> Account:
-    """AC-18.1: decode the JWT, then re-read the account by id - or 401.
-
-    `ensure_demo_seed()` runs the (idempotent, first-call-only) credential-table seed via the sync
-    bridge, so a fresh process serves the very first login without a separate provisioning step.
-    """
+    """AC-18.1: decode the JWT - or 401. Pure/local (no I/O): see module docstring."""
     token = bearer_token(creds)
     try:
-        account_id = decode_access_token(token)
-        await run_in_threadpool(ensure_demo_seed)
-        account = await get_account_by_id(account_id)
+        return decode_access_token(token)
     except Unauthorized as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
-    if account is None:
-        raise HTTPException(status_code=401, detail="account no longer exists")
-    return account

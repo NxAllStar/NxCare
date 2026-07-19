@@ -1,29 +1,31 @@
-"""HTTP surface for FR-18 authentication: JWT-based, backed by a real `account_credentials` table.
+"""HTTP surface for FR-18 authentication: JWT-based, backed by real password columns.
 
-`POST /login` takes `{username, password}` and verifies it against `auth/credential_store.py`
-(bcrypt hash comparison) - patient accounts use their `patient_code` as `username` (a patient logs
-in with the same code shown throughout the app), staff accounts use a plain username. On success
-it issues a short-lived signed access token (`auth/jwt_tokens.py`, `JWT_EXPIRE_MINUTES` in
-`.env.example`); there is no server-side session record, so `POST /logout` only needs the client
-to discard the token - it does not (and structurally cannot) revoke it early. This is stateless by
-design, not an oversight (see `jwt_tokens.py`'s docstring).
+`POST /login` takes `{patientCode, password}` and verifies it directly against
+`Patient.password_hash` (patient accounts - `patientCode` is literally `Patient.patient_code`) or
+`Resource.password_hash` (doctor accounts - the same field carries `Resource.username` instead) -
+bcrypt hash comparison, `auth/password_login.py`, against whatever is actually in the database.
+There is no synthetic account auto-seeded here: a `Patient`/`Resource` row only becomes a working
+login once something sets its `password_hash` (see `auth/password_login.py::hash_password`) -
+this router never invents or overwrites one on the caller's behalf. On success it issues a
+short-lived signed access token (`auth/jwt_tokens.py`, `jwt_expire_minutes` in `.env.example`);
+there is no server-side session record, so `POST /logout` only needs the client to discard the
+token - it does not (and structurally cannot) revoke it early. This is stateless by design, not
+an oversight (see `jwt_tokens.py`'s docstring).
 
-`GET /demo-accounts` backs the login screen's quick-select buttons: it reads the real `Patient`
-rows linked to the two seeded demo accounts (`api/demo_seed.py`) from Postgres, rather than a
-second, hand-maintained copy of the same two names in the frontend.
+`GET /demo-accounts` backs the login screen's quick-select buttons: it lists every real `Patient`
+row that already has a `password_hash` set, so the button list always matches whatever accounts
+can actually log in - never a hardcoded, separately-maintained pair of names.
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from starlette.concurrency import run_in_threadpool
 
 from ..auth import Account
-from ..auth.credential_store import verify_credentials
 from ..auth.jwt_tokens import create_access_token
+from ..auth.password_login import verify_credentials
 from ..models import Patient
 from ..state.sql.repository import AsyncPostgresRepository
-from .demo_seed import DEMO_PATIENT_2_ID, DEMO_PATIENT_ID, ensure_demo_seed
 from .deps import get_async_repo, get_current_account
 from .schemas import CamelModel
 
@@ -31,7 +33,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class LoginRequest(CamelModel):
-    username: str  # a patient's patient_code, or a staff account's username
+    patient_code: str  # a patient's patient_code, or a doctor's Resource.username
     password: str
 
 
@@ -58,13 +60,12 @@ class DemoAccountOut(CamelModel):
 
 @router.post("/login", response_model=LoginOut)
 async def login(body: LoginRequest) -> LoginOut:
-    await run_in_threadpool(ensure_demo_seed)
-    account = await verify_credentials(body.username, body.password)
+    account = await verify_credentials(body.patient_code, body.password)
     if account is None:
         # Same generic failure regardless of cause - unknown username or wrong password are
         # indistinguishable to the caller (no account enumeration).
         raise HTTPException(status_code=401, detail="invalid credentials")
-    token = create_access_token(account.id)
+    token = create_access_token(account)
     return LoginOut(
         access_token=token,
         role=account.role.value,
@@ -77,15 +78,12 @@ async def login(body: LoginRequest) -> LoginOut:
 async def demo_accounts(
     repo: AsyncPostgresRepository = Depends(get_async_repo),
 ) -> list[DemoAccountOut]:
-    await run_in_threadpool(ensure_demo_seed)
-    out: list[DemoAccountOut] = []
-    for patient_id in (DEMO_PATIENT_ID, DEMO_PATIENT_2_ID):
-        patient = await repo.get(Patient, patient_id)
-        if patient is not None:
-            out.append(
-                DemoAccountOut(patient_code=patient.patient_code, display_name=patient.full_name)
-            )
-    return out
+    patients = await repo.list(Patient)
+    return [
+        DemoAccountOut(patient_code=p.patient_code, display_name=p.full_name)
+        for p in patients
+        if p.password_hash
+    ]
 
 
 @router.post("/logout", status_code=204)

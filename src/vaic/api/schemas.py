@@ -19,11 +19,19 @@ class CamelModel(BaseModel):
     )
 
 
-def camel_schema(entity_cls: type[BaseModel]) -> type[CamelModel]:
+def camel_schema(
+    entity_cls: type[BaseModel], *, exclude: set[str] = frozenset()
+) -> type[CamelModel]:
     """Build a `CamelModel` response schema mirroring `entity_cls`'s fields 1:1.
 
     The entity stays the single source of truth for field names/types/defaults (DRY) - this only
-    adds the camelCase JSON alias on top, for use as a route's `response_model`.
+    adds the camelCase JSON alias on top, for use as a route's `response_model`. `exclude` drops
+    fields that must never leave the server (e.g. `Patient.password_hash`) - the entity itself
+    still needs them for persistence, so they cannot simply be removed from the entity.
     """
-    fields = {name: (info.annotation, info) for name, info in entity_cls.model_fields.items()}
+    fields = {
+        name: (info.annotation, info)
+        for name, info in entity_cls.model_fields.items()
+        if name not in exclude
+    }
     return create_model(f"{entity_cls.__name__}Out", __base__=CamelModel, **fields)

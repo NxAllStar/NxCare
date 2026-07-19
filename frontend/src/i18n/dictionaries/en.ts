@@ -8,7 +8,7 @@
 import type { DictKey } from './vi';
 
 const en = {
-  'app.name': 'VAIC',
+  'app.name': 'NxCare',
   'app.tagline': 'Your care journey, accompanied end to end',
 
   'nav.home': 'Home',

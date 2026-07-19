@@ -25,7 +25,7 @@ from .schemas import camel_schema
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
-PatientOut = camel_schema(Patient)
+PatientOut = camel_schema(Patient, exclude={"password_hash"})
 AppointmentOut = camel_schema(Appointment)
 CarePlanOut = camel_schema(CarePlan)
 PaymentOut = camel_schema(Payment)

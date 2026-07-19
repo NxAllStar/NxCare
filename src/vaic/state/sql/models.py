@@ -18,7 +18,6 @@ from sqlalchemy import (
     Integer,
     Numeric,
     Text,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase
@@ -96,6 +95,7 @@ class PatientRow(Base):
     patient_code = Column(Text, nullable=False, unique=True)
     priority_level = Column(PriorityLevelEnum, nullable=False, server_default="ROUTINE")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    password_hash = Column(Text)  # FR-18 login - never selected into any API response
 
 
 class ResourceRow(Base):
@@ -106,6 +106,8 @@ class ResourceRow(Base):
     department_id = Column(UUID(as_uuid=True), nullable=False)
     is_available = Column(Boolean, nullable=False, server_default="true")
     capacity_per_hour = Column(Integer)
+    username = Column(Text, unique=True)  # FR-18 staff login handle (doctor only, for now)
+    password_hash = Column(Text)  # FR-18 login - never selected into any API response
 
 
 class DepartmentRow(Base):

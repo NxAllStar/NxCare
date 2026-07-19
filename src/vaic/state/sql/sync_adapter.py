@@ -63,11 +63,8 @@ def _get_loop() -> asyncio.AbstractEventLoop:
         return _loop
 
 
-def get_bridge_engine() -> AsyncEngine:
-    """The process-wide engine isolated to the bridge loop (see module docstring point 2) - for
-    any OTHER Postgres access (e.g. `auth/credential_store.py`'s seeding) that must run from a
-    sync context alongside `PostgresRepositorySyncAdapter`, so it shares one loop/pool instead of
-    creating yet another separate engine."""
+def _get_bridge_engine() -> AsyncEngine:
+    """The process-wide engine isolated to the bridge loop (see module docstring point 2)."""
     global _bridge_engine
     with _bridge_engine_lock:
         if _bridge_engine is None:
@@ -76,23 +73,17 @@ def get_bridge_engine() -> AsyncEngine:
 
 
 def _get_bridge_repo() -> AsyncPostgresRepository:
-    """The process-wide bridge repository, backed by `get_bridge_engine()` - never
+    """The process-wide bridge repository, backed by `_get_bridge_engine()` - never
     `state/postgres.py`'s singleton, which belongs to the native-async request path."""
     global _bridge_repo
     with _bridge_repo_lock:
         if _bridge_repo is None:
-            _bridge_repo = AsyncPostgresRepository(build_sessionmaker(get_bridge_engine()))
+            _bridge_repo = AsyncPostgresRepository(build_sessionmaker(_get_bridge_engine()))
         return _bridge_repo
 
 
-def run_coro(coro: Coroutine[Any, Any, R]) -> R:
-    """Run `coro` on the bridge loop and block the calling thread for the result - the same
-    dispatch `PostgresRepositorySyncAdapter` uses internally, exposed for other sync-context
-    callers that need the bridge loop (e.g. one-time credential-table seeding at startup)."""
+def _run(coro: Coroutine[Any, Any, R]) -> R:
     return asyncio.run_coroutine_threadsafe(coro, _get_loop()).result()
-
-
-_run = run_coro  # internal alias, kept so the methods below read as "this class's own helper"
 
 
 class PostgresRepositorySyncAdapter(Repository):

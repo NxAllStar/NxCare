@@ -17,7 +17,7 @@ from .schemas import CamelModel, camel_schema
 
 router = APIRouter(prefix="/coordinator", tags=["dashboard"])
 
-ResourceOut = camel_schema(Resource)
+ResourceOut = camel_schema(Resource, exclude={"password_hash"})
 DisruptionOut = camel_schema(DisruptionEvent)
 
 

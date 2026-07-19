@@ -29,7 +29,6 @@ from ...models.entities import (
     IntakeSession,
     Notification,
     Patient,
-    PatientLocation,
     Payment,
     QueueTicket,
     Resource,
