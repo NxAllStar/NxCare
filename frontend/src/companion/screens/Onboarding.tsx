@@ -33,10 +33,13 @@ export function Onboarding({ s, a }: ScreenProps) {
       {s.onboardStep === 'login' && (
         <div style={{ flexShrink: 0, padding: '28px 24px 32px', display: 'flex', flexDirection: 'column', gap: 24, animation: 'vaicFadeUp .3s ease' }}>
           <div>
-            <div style={{ width: 52, height: 52, borderRadius: 16, background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7.5-4.9-10-9.6C.5 7.8 2.6 4 6.3 4c2.2 0 3.7 1.2 5.7 4 2-2.8 3.5-4 5.7-4 3.7 0 5.8 3.8 4.3 7.4C19.5 16.1 12 21 12 21z" fill="#fff" /></svg>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ width: 44, height: 44, background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }} aria-hidden="true">
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 800, color: '#fff' }}>NxC</span>
+              </span>
+              <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: '#12151A' }}>Nx<span style={{ color: PRIMARY }}>Care</span></span>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.01em' }}>Đồng hành khám bệnh</div>
+            <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.01em' }}>Sức khỏe trong tầm tay</div>
             <div style={{ fontSize: 16, color: MUTED, marginTop: 8, lineHeight: 1.5 }}>Đăng nhập để theo dõi lịch khám, kết quả và lộ trình của chị và người thân.</div>
           </div>
 
@@ -48,7 +51,7 @@ export function Onboarding({ s, a }: ScreenProps) {
             </div>
           </div>
           <button onClick={a.goOtp} style={{ height: 56, border: 'none', borderRadius: 999, background: PRIMARY, color: '#fff', fontSize: 17, fontWeight: 700, cursor: 'pointer' }}>Gửi mã OTP</button>
-          <div style={{ textAlign: 'center', fontSize: 13, color: FAINT, lineHeight: 1.5 }}>Tiếp tục đồng nghĩa chị đồng ý với Điều khoản sử dụng &amp; Chính sách riêng tư.</div>
+          <div style={{ textAlign: 'center', fontSize: 13, color: FAINT, lineHeight: 1.5 }}>Tiếp tục đồng nghĩa bạn đồng ý với Điều khoản sử dụng &amp; Chính sách riêng tư.</div>
         </div>
       )}
 
