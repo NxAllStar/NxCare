@@ -1,0 +1,494 @@
+<title>NxCare — Pitch Deck</title>
+<style>
+  :root{
+    --bg:#eef2f3;
+    --canvas:#f6f8f9;
+    --surface:#ffffff;
+    --surface-alt:#eef4f5;
+    --primary:#0e6e7c;
+    --primary-dark:#0a4d57;
+    --primary-tint:#e2f0f2;
+    --ink:#142a31;
+    --muted:#5c7480;
+    --border:#dbe4e6;
+    --done:#2f9e6e;
+    --pending:#d99a35;
+    --blocked:#cf5648;
+    --progress:#3172a6;
+    --heat-1:#2f9e6e;
+    --heat-2:#8ab866;
+    --heat-3:#d99a35;
+    --heat-4:#cf5648;
+    --font-ui: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --shadow: 0 1px 2px rgba(20,42,49,.04), 0 8px 24px rgba(20,42,49,.06);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    font-family:var(--font-ui);
+    color:var(--ink);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .deck{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:28px;
+    padding:40px 16px 80px;
+  }
+
+  .slide{
+    position:relative;
+    width:1280px;
+    max-width:100%;
+    aspect-ratio:16/9;
+    background:var(--canvas);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .slide-inner{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:56px 72px 0 72px;
+    min-height:0;
+  }
+
+  .topbar{
+    position:absolute;
+    top:0; left:0; right:0;
+    height:5px;
+    background:var(--primary);
+  }
+
+  .eyebrow{
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--primary-dark);
+    margin:0 0 14px 0;
+  }
+
+  h1.headline, h2.headline{
+    margin:0 0 18px 0;
+    font-weight:700;
+    line-height:1.18;
+    text-wrap:balance;
+    color:var(--ink);
+  }
+  .headline--xl{ font-size:52px; }
+  .headline--lg{ font-size:34px; }
+  .headline--md{ font-size:28px; }
+
+  .body-text{
+    font-size:18px;
+    line-height:1.62;
+    color:var(--ink);
+    max-width:62ch;
+  }
+  .body-text + .body-text{ margin-top:14px; }
+
+  .subhead{
+    font-size:20px;
+    font-weight:500;
+    color:var(--primary-dark);
+    margin:0 0 20px 0;
+  }
+
+  .muted{ color:var(--muted); }
+
+  .footer{
+    height:56px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 72px;
+    border-top:1px solid var(--border);
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:.04em;
+  }
+  .footer .brand{ font-weight:700; color:var(--primary-dark); }
+
+  /* ---- Title slide ---- */
+  .slide--title .slide-inner{
+    justify-content:center;
+    align-items:flex-start;
+    padding-left:96px;
+  }
+  .slide--title .logo-mark{
+    width:52px; height:52px;
+    border:2px solid var(--primary);
+    border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:28px;
+  }
+  .slide--title .logo-mark span{
+    width:16px; height:16px;
+    background:var(--primary);
+    border-radius:2px;
+  }
+  .slide--title .company{
+    font-size:64px;
+    font-weight:700;
+    margin:0 0 10px 0;
+    color:var(--ink);
+  }
+  .slide--title .tagline{
+    font-size:22px;
+    color:var(--primary-dark);
+    font-weight:500;
+    max-width:56ch;
+    margin:0 0 22px 0;
+    text-wrap:balance;
+  }
+  .slide--title .body-text{ max-width:58ch; }
+
+  /* ---- stat callouts ---- */
+  .stat-row{ display:flex; gap:20px; margin-top:24px; }
+  .stat-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-top:3px solid var(--blocked);
+    padding:18px 22px;
+    min-width:150px;
+  }
+  .stat-card .stat-num{ font-size:36px; font-weight:700; color:var(--ink); }
+  .stat-card .stat-label{ font-size:13px; color:var(--muted); margin-top:4px; }
+
+  /* ---- two column comparison (boundary slide) ---- */
+  .compare{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    margin-top:8px;
+  }
+  .compare-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:26px 28px;
+  }
+  .compare-card .tag{
+    display:inline-block;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:4px 10px;
+    margin-bottom:14px;
+  }
+  .compare-card.unchanged{ border-top:3px solid var(--muted); }
+  .compare-card.unchanged .tag{ background:var(--surface-alt); color:var(--muted); }
+  .compare-card.nxcare{ border-top:3px solid var(--primary); }
+  .compare-card.nxcare .tag{ background:var(--primary-tint); color:var(--primary-dark); }
+  .compare-card h3{ font-size:20px; margin:0 0 10px 0; }
+  .compare-card p{ font-size:15.5px; line-height:1.55; color:var(--ink); margin:0; }
+
+  /* ---- heatmap bars (dept load) ---- */
+  .heatmap{ margin-top:26px; display:flex; flex-direction:column; gap:12px; }
+  .heat-row{ display:flex; align-items:center; gap:16px; }
+  .heat-row .dept{ width:150px; font-size:14.5px; font-weight:600; color:var(--ink); }
+  .heat-track{ flex:1; height:14px; background:var(--surface-alt); position:relative; }
+  .heat-fill{ height:100%; }
+  .heat-row .pct{ width:56px; text-align:right; font-size:14px; font-weight:600; color:var(--ink); }
+
+  /* ---- bullet list capabilities ---- */
+  .cap-list{ display:flex; flex-direction:column; gap:14px; margin-top:6px; }
+  .cap-item{ display:flex; gap:14px; align-items:flex-start; }
+  .cap-dot{ width:8px; height:8px; margin-top:9px; background:var(--primary); flex:none; }
+  .cap-item p{ margin:0; font-size:17px; line-height:1.55; }
+
+  /* ---- step slides ---- */
+  .step-block{ display:flex; gap:24px; margin-bottom:22px; }
+  .step-num{
+    font-size:15px; font-weight:700; color:var(--primary);
+    border:1.5px solid var(--primary);
+    width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center;
+    flex:none;
+  }
+  .step-copy h3{ margin:0 0 6px 0; font-size:19px; }
+  .step-copy p{ margin:0; font-size:16px; line-height:1.55; color:var(--ink); max-width:56ch; }
+
+  /* ---- single-step focus slides ---- */
+  .focus-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-top:3px solid var(--primary);
+    padding:28px 32px;
+    margin-top:6px;
+  }
+  .focus-card p{ font-size:18px; line-height:1.6; margin:0; max-width:58ch; }
+
+  /* ---- persona grid ---- */
+  .persona-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:8px;
+  }
+  .persona-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:20px 22px;
+  }
+  .persona-card .role{
+    font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--primary-dark); margin-bottom:8px;
+  }
+  .persona-card p{ margin:0; font-size:15.5px; line-height:1.55; color:var(--ink); }
+
+  /* ---- CTA slide ---- */
+  .slide--cta .slide-inner{ justify-content:center; }
+  .cta-box{
+    background:var(--primary);
+    color:#fff;
+    padding:32px 36px;
+    margin-top:22px;
+    max-width:640px;
+  }
+  .cta-box p{ margin:0; font-size:17px; line-height:1.6; color:#eaf5f6; }
+  .cta-box .placeholder{ font-style:italic; opacity:.85; }
+
+  @media print{
+    body{ background:#fff; }
+    .deck{ padding:0; gap:0; }
+    .slide{
+      box-shadow:none;
+      border:none;
+      width:13.333in;
+      height:7.5in;
+      aspect-ratio:auto;
+      page-break-after:always;
+    }
+  }
+  @page{ size:13.333in 7.5in; margin:0; }
+</style>
+
+<div class="deck">
+
+  <!-- 1. TITLE -->
+  <section class="slide slide--title">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <div class="logo-mark"><span></span></div>
+      <div class="company">NxCare</div>
+      <p class="tagline">Bác sĩ ra chỉ định. NxCare lo phần còn lại.</p>
+      <p class="body-text">Đúng thứ tự xét nghiệm, đúng phòng còn trống, điều hướng theo thời gian thực thay vì phỏng đoán. Bớt chờ đợi, bớt đi lại — không phòng nào bị bỏ trống.</p>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Điều phối hành trình chăm sóc bằng AI</span><span>01 / 12</span></div>
+  </section>
+
+  <!-- 2. PROBLEM 1 -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Vấn đề — 01</p>
+      <h2 class="headline headline--lg">Rời phòng khám với ba chỉ định, không biết bắt đầu từ đâu</h2>
+      <p class="body-text">Một bệnh nhân cầm trong tay ba chỉ định — xét nghiệm máu, chụp MRI, siêu âm — và tự đoán: xét nghiệm máu trước.</p>
+      <p class="body-text">Rồi ngồi chờ hai tiếng lấy kết quả, mới biết ra MRI lẽ ra có thể làm song song ngay từ đầu. Mất trắng vì một vấn đề sắp xếp thứ tự mà chưa ai từng cảnh báo trước.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num">2 giờ</div>
+          <div class="stat-label">máy móc bỏ không, người chờ vô ích</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">3</div>
+          <div class="stat-label">chỉ định, không có thứ tự khuyến nghị</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Vấn đề</span><span>02 / 12</span></div>
+  </section>
+
+  <!-- 3. PROBLEM 2 -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Vấn đề — 02</p>
+      <h2 class="headline headline--lg">Không ai nhìn thấy toàn cảnh bệnh viện</h2>
+      <p class="body-text">9 giờ sáng: Chẩn đoán hình ảnh trống trơn, trong khi Tim mạch tràn ra hành lang với bốn mươi người chờ. Không ai theo dõi hàng đợi và phòng trống của từng khoa theo thời gian thực.</p>
+      <p class="body-text">Bệnh nhân chọn cửa theo lời đồn — cửa nào bị chọn trước sẽ gánh hết tải cả buổi sáng, trong khi ba cửa còn lại đứng yên.</p>
+      <div class="heatmap">
+        <div class="heat-row"><div class="dept">Chẩn đoán hình ảnh</div><div class="heat-track"><div class="heat-fill" style="width:12%;background:var(--heat-1)"></div></div><div class="pct">12%</div></div>
+        <div class="heat-row"><div class="dept">Xét nghiệm</div><div class="heat-track"><div class="heat-fill" style="width:48%;background:var(--heat-2)"></div></div><div class="pct">48%</div></div>
+        <div class="heat-row"><div class="dept">Siêu âm</div><div class="heat-track"><div class="heat-fill" style="width:66%;background:var(--heat-3)"></div></div><div class="pct">66%</div></div>
+        <div class="heat-row"><div class="dept">Tim mạch</div><div class="heat-track"><div class="heat-fill" style="width:97%;background:var(--heat-4)"></div></div><div class="pct">97%</div></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Vấn đề</span><span>03 / 12</span></div>
+  </section>
+
+  <!-- 4. BOUNDARY -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Ranh giới rõ ràng</p>
+      <h2 class="headline headline--lg">Bác sĩ vẫn là người chẩn đoán và ra quyết định</h2>
+      <p class="body-text">NxCare không bao giờ chạm vào việc đó. Điều chưa ai phụ trách là mọi thứ sau đó — đó là khoảng trống NxCare lấp vào.</p>
+      <div class="compare">
+        <div class="compare-card unchanged">
+          <span class="tag">Không đổi</span>
+          <h3>Bác sĩ quyết định</h3>
+          <p>Khám bệnh, chẩn đoán, chọn xét nghiệm nào và mức độ khẩn cấp ra sao. Quyết định đó hoàn toàn thuộc về bác sĩ — NxCare không nhìn thấy, không can thiệp trước khi quyết định được đưa ra.</p>
+        </div>
+        <div class="compare-card nxcare">
+          <span class="tag">NxCare điều phối</span>
+          <h3>Mọi thứ sau chỉ định</h3>
+          <p>Xét nghiệm nào làm trước, phòng nào thực sự còn trống, thời gian chờ thực tế là bao lâu. Ba câu hỏi chưa ai từng phụ trách — đến khi có NxCare.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Ranh giới</span><span>04 / 12</span></div>
+  </section>
+
+  <!-- 5. SOLUTION -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Giải pháp</p>
+      <h2 class="headline headline--lg">NxCare bắt đầu đúng nơi quyết định của bác sĩ kết thúc</h2>
+      <p class="subhead">Từ chỉ định đã ký, NxCare:</p>
+      <div class="cap-list">
+        <div class="cap-item"><div class="cap-dot"></div><p>Tính toán trình tự an toàn và nhanh nhất để thực hiện các xét nghiệm — nhịn ăn, thời gian trả kết quả, máy móc sẵn có.</p></div>
+        <div class="cap-item"><div class="cap-dot"></div><p>Theo dõi hàng đợi và phòng trống theo thời gian thực trên toàn bệnh viện.</p></div>
+        <div class="cap-item"><div class="cap-dot"></div><p>Điều hướng bệnh nhân đến đúng phòng đang thực sự còn trống.</p></div>
+        <div class="cap-item"><div class="cap-dot"></div><p>Sắp xếp lại toàn bộ ngay khi có thay đổi — máy hỏng, lịch bác sĩ trễ, ca cấp cứu ập tới.</p></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Giải pháp</span><span>05 / 12</span></div>
+  </section>
+
+  <!-- 6. HOW IT WORKS 1-2 -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Cách vận hành — bước 1 &amp; 2</p>
+      <h2 class="headline headline--md">Bắt đầu từ chỉ định đã ký, không phải từ phỏng đoán</h2>
+      <div class="step-block">
+        <div class="step-num">01</div>
+        <div class="step-copy">
+          <h3>Điểm khởi đầu</h3>
+          <p>Chỉ định lâm sàng đã ký của bác sĩ — xét nghiệm nào, mức ưu tiên nào. Không bao giờ là hội thoại với bệnh nhân, không bao giờ là AI tự đoán bệnh.</p>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-num">02</div>
+        <div class="step-copy">
+          <h3>Care Plan Agent sắp xếp trình tự</h3>
+          <p>Sắp xếp các chỉ định đã ký theo ràng buộc thực tế — lấy máu trước, chụp X-quang trong lúc chờ kết quả, rồi siêu âm — thay vì thứ tự bệnh nhân tự đoán.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Cách vận hành</span><span>06 / 12</span></div>
+  </section>
+
+  <!-- 7. STEP 3 -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Cách vận hành — bước 3</p>
+      <h2 class="headline headline--lg">Hệ thống luôn biết phòng MRI nào đang trống</h2>
+      <div class="focus-card">
+        <p>Công cụ dự báo có căn cứ theo dõi hàng đợi, thời gian chờ và tình trạng trống của từng phòng theo thời gian thực — để hệ thống luôn biết chính xác nơi có thể tiếp nhận ngay.</p>
+      </div>
+      <div class="heatmap" style="margin-top:22px">
+        <div class="heat-row"><div class="dept">Phòng MRI 2</div><div class="heat-track"><div class="heat-fill" style="width:8%;background:var(--heat-1)"></div></div><div class="pct">Trống</div></div>
+        <div class="heat-row"><div class="dept">Phòng siêu âm 1</div><div class="heat-track"><div class="heat-fill" style="width:55%;background:var(--heat-2)"></div></div><div class="pct">55%</div></div>
+        <div class="heat-row"><div class="dept">Phòng X-quang</div><div class="heat-track"><div class="heat-fill" style="width:82%;background:var(--heat-3)"></div></div><div class="pct">82%</div></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Cách vận hành</span><span>07 / 12</span></div>
+  </section>
+
+  <!-- 8. STEP 4 -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Cách vận hành — bước 4</p>
+      <h2 class="headline headline--lg">Journey Agent đồng hành cùng bệnh nhân từng bước</h2>
+      <div class="focus-card">
+        <p>Từ chỉ định trở đi, Journey Agent tái sắp xếp và điều hướng liên tục, cập nhật dòng thời gian trực tiếp và check-in bằng mã QR — thay thế hoàn toàn cho việc phỏng đoán.</p>
+      </div>
+      <p class="body-text" style="margin-top:20px">Bệnh nhân luôn biết bước tiếp theo là gì, phòng nào, còn bao lâu — không cần hỏi ai.</p>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Cách vận hành</span><span>08 / 12</span></div>
+  </section>
+
+  <!-- 9. STEP 5 -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Cách vận hành — bước 5</p>
+      <h2 class="headline headline--lg">Khi có sự cố, hệ thống lập kế hoạch lại ngay lập tức</h2>
+      <div class="focus-card">
+        <p>Máy hỏng, lịch trễ, ca cấp cứu — Disruption và Coordinator Agent lập kế hoạch lại tức thì. Một bộ kiểm tra ràng buộc chặn mọi thay đổi rủi ro, và một bảng điều phối dành cho quyết định đủ lớn cần con người gật đầu.</p>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Cách vận hành</span><span>09 / 12</span></div>
+  </section>
+
+  <!-- 10. WHO IT'S FOR -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Dành cho ai</p>
+      <h2 class="headline headline--lg">Bốn nhóm người, một điểm nghẽn chung</h2>
+      <div class="persona-grid">
+        <div class="persona-card">
+          <div class="role">Bệnh nhân</div>
+          <p>Cầm chỉ định của bác sĩ, chỉ muốn biết làm gì tiếp theo, theo thứ tự nào, và mất bao lâu.</p>
+        </div>
+        <div class="persona-card">
+          <div class="role">Bác sĩ</div>
+          <p>Muốn chỉ định của mình được thực hiện đúng, không muốn nó biến thành một bài toán xếp lịch.</p>
+        </div>
+        <div class="persona-card">
+          <div class="role">Điều phối viên bệnh viện</div>
+          <p>Hiện đang phát hiện quá tải và hỏng hóc bằng điện thoại và cảm tính.</p>
+        </div>
+        <div class="persona-card">
+          <div class="role">Quản trị viên</div>
+          <p>Muốn biết một phòng MRI bỏ trống và hàng dài bốn mươi người có phải là cùng một vấn đề có thể giải quyết được.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Dành cho ai</span><span>10 / 12</span></div>
+  </section>
+
+  <!-- 11. IMPACT -->
+  <section class="slide">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Tác động</p>
+      <h2 class="headline headline--lg">Chỉ định bị đoán sai và căn phòng trống ba cửa bên cạnh — cùng một sự thất bại</h2>
+      <p class="body-text">Không ai nhìn thấy toàn bộ bệnh viện cùng một lúc. NxCare là thứ nhìn thấy.</p>
+      <p class="body-text">Lần đầu tiên, bệnh nhân có thể theo dõi hành trình của chính mình thay vì hy vọng mình đã chọn đúng hàng.</p>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Tác động</span><span>11 / 12</span></div>
+  </section>
+
+  <!-- 12. CTA -->
+  <section class="slide slide--cta">
+    <div class="topbar"></div>
+    <div class="slide-inner">
+      <p class="eyebrow">Tiếp theo</p>
+      <h2 class="headline headline--lg">Cùng xây dựng bệnh viện biết nhìn toàn cảnh</h2>
+      <div class="cta-box">
+        <p>Đặt lịch xem bản demo trực tiếp với đội ngũ NxCare.</p>
+        <p class="placeholder" style="margin-top:10px">Liên hệ: [email liên hệ] · [website]</p>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">NXCARE</span><span>Liên hệ</span><span>12 / 12</span></div>
+  </section>
+
+</div>
