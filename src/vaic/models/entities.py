@@ -41,9 +41,12 @@ class _Base(BaseModel):
 class Patient(_Base):
     full_name: str  # PII - excluded from logs (NFR-SEC-01)
     phone: str | None = None  # PII
-    patient_code: str  # scannable identifier shown in the app (FR-17)
+    patient_code: str  # scannable identifier shown in the app (FR-17); also the login username
     priority_level: PriorityLevel = PriorityLevel.ROUTINE
     created_at: datetime = Field(default_factory=_now)
+    # FR-18 login: bcrypt hash (auth/password_login.py), NEVER the API - every response schema
+    # built from this entity MUST exclude it (see api/schemas.py::camel_schema's `exclude`).
+    password_hash: str | None = None
 
 
 class IntakeSession(_Base):
@@ -158,6 +161,11 @@ class Resource(_Base):
     department_id: UUID
     is_available: bool = True
     capacity_per_hour: int | None = None
+    # FR-18 staff login (doctor only, for now): a plain login handle and a bcrypt hash
+    # (auth/password_login.py). Both None for non-login resources (room/equipment, or a
+    # doctor/technician not yet issued a login). NEVER the API - see `Patient.password_hash`.
+    username: str | None = None
+    password_hash: str | None = None
 
 
 class DisruptionEvent(_Base):

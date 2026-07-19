@@ -36,6 +36,7 @@ class AccountDirectory:
     def __init__(self, accounts: Iterable[Account] = ()) -> None:
         self._by_username: dict[str, Account] = {}
         self._by_id: dict[UUID, Account] = {}
+        self._by_patient_id: dict[UUID, Account] = {}
         for account in accounts:
             self.register(account)
 
@@ -44,6 +45,8 @@ class AccountDirectory:
         stored = account.model_copy(deep=True)
         self._by_username[stored.username] = stored
         self._by_id[stored.id] = stored
+        if stored.patient_id is not None:
+            self._by_patient_id[stored.patient_id] = stored
         return stored.model_copy(deep=True)
 
     def get_by_username(self, username: str) -> Account | None:
@@ -52,6 +55,12 @@ class AccountDirectory:
 
     def get_by_id(self, account_id: UUID) -> Account | None:
         found = self._by_id.get(account_id)
+        return found.model_copy(deep=True) if found is not None else None
+
+    def get_by_patient_id(self, patient_id: UUID) -> Account | None:
+        """The account (if any) whose `patient_id` matches - the login-by-patient-code path
+        (`AuthService.login_by_patient_id`) resolves through here."""
+        found = self._by_patient_id.get(patient_id)
         return found.model_copy(deep=True) if found is not None else None
 
 

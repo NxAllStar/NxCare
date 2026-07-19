@@ -8,6 +8,11 @@ RUN npm ci
 
 COPY . .
 
+# Without this ARG declaration, docker-compose.yml's `build.args.VITE_API_BASE_URL` is silently
+# dropped (an undeclared build arg is ignored, not an error) and ENV below resolves to an empty
+# string - Vite then bakes "" into the bundle instead of the backend URL, and every fetch in the
+# browser goes to a relative path on nxcare_fe itself instead of nxcare_be.
+ARG VITE_API_BASE_URL=http://localhost:8000
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 

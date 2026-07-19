@@ -12,6 +12,9 @@ The variable contract matches `.env.example`:
 - `LLM_CHAT_MODEL`      - model name for Journey chat; defaults to `nx-chat`.
 - `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_NAME`, `POSTGRES_USER`, `POSTGRES_PASSWORD` - the
   durable-store connection (OI-15), consumed by `vaic.state.postgres`.
+- `JWT_SECRET` - signs the FR-18 access tokens (`vaic.auth.jwt_tokens`). The default below is an
+  insecure placeholder for local dev only - a real deployment MUST override it with a long random
+  value, or every token it issues is forgeable by anyone who reads this source file.
 
 Note: `.env.example` also defines `QWEN_BASE_URL`. Journey chat deliberately uses `LLM_API_BASE_URL`
 (the hosted provider), not the Qwen endpoint - a decision recorded in the TASK-009 log and flagged
@@ -50,6 +53,9 @@ class Settings(BaseSettings):
     postgres_name: str = "nxcare"
     postgres_user: str = "nxcare"
     postgres_password: str = ""
+
+    jwt_secret: str = "insecure-dev-secret-change-me"  # nosec: dev-only default, see docstring
+    jwt_expire_minutes: int = 30
 
     @property
     def postgres_url(self) -> str:

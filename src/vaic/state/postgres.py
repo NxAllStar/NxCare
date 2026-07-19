@@ -3,6 +3,12 @@
 Mirrors the `get_settings()` pattern in `config.py`: built once per process via `lru_cache`, never
 constructed ad hoc by a caller. `sqlalchemy` is imported lazily so the in-memory/Redis paths never
 require the optional `sql` extra (`uv sync --extra sql`).
+
+`get_engine()`/`get_sessionmaker()` bind their asyncpg connection pool to whichever event loop is
+running the first time they are called - safe for every FastAPI request handler (uvicorn runs them
+all on the same loop), but NOT safe to share with `state/sql/sync_adapter.py`'s dedicated
+background loop. That module builds its own engine via `build_engine()`/`build_sessionmaker()`
+(the uncached factories below) instead of reusing this module's singletons - see its docstring.
 """
 
 from __future__ import annotations
@@ -24,9 +30,10 @@ def _json_serializer(value: object) -> str:
     return json.dumps(value, default=str)
 
 
-@lru_cache
-def get_engine() -> AsyncEngine:
-    """Return the process-wide async engine, built once from `Settings.postgres_url`."""
+def build_engine() -> AsyncEngine:
+    """A fresh async engine from `Settings.postgres_url` - NOT cached; callers that need a
+    singleton use `get_engine()`, callers that need a loop-isolated engine (the sync bridge) call
+    this directly."""
     from sqlalchemy.ext.asyncio import create_async_engine
 
     return create_async_engine(
@@ -34,12 +41,23 @@ def get_engine() -> AsyncEngine:
     )
 
 
+def build_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    """A session factory bound to `engine` - NOT cached, see `build_engine`."""
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+    return async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+
+@lru_cache
+def get_engine() -> AsyncEngine:
+    """Return the process-wide async engine, built once from `Settings.postgres_url`."""
+    return build_engine()
+
+
 @lru_cache
 def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
     """Return the process-wide session factory, bound to `get_engine()`."""
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
-    return async_sessionmaker(get_engine(), expire_on_commit=False, class_=AsyncSession)
+    return build_sessionmaker(get_engine())
 
 
 async def dispose_engine() -> None:
