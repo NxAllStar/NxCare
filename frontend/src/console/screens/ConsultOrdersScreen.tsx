@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/i18n';
 import { Avatar, Button, Card, StatusChip, PatientCodeQr, useToast, Toast } from '@/components/primitives';
 import { clinicalStore, type ClinicalPatient } from '../dashboard/clinicalStore';
@@ -36,6 +36,10 @@ export function ConsultOrdersScreen() {
   // The real backend care-plan route (TASK-038) - the SAME data the patient app renders, mapped the
   // SAME way (shared toCarePlanSteps), so the doctor's preview and the patient's journey match.
   const [carePlanSteps, setCarePlanSteps] = useState<CarePlanDisplayStep[] | null>(null);
+  // Monotonic request token shared by the select-patient load and the sign-orders write, so a slow
+  // /active read cannot land after (and clobber) a newer result - e.g. the doctor signs orders while
+  // the initial "does this patient have a plan?" fetch is still in flight and about to return null.
+  const carePlanReqRef = useRef(0);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
@@ -66,23 +70,21 @@ export function ConsultOrdersScreen() {
   // generated - the same plan the patient app reads via /active - instead of static placeholder data.
   useEffect(() => {
     if (!selectedPatient) {
+      carePlanReqRef.current += 1;
       setCarePlanSteps(null);
       return;
     }
-    let cancelled = false;
+    const seq = (carePlanReqRef.current += 1);
     void (async () => {
       try {
         const { patientId } = await careplanApi.resolvePatient(selectedPatient.patientCode);
         const view = await careplanApi.fetchActiveCarePlan(patientId);
-        if (cancelled) return;
+        if (seq !== carePlanReqRef.current) return; // superseded by a newer load or a sign-off
         setCarePlanSteps(view?.rawTasks?.length ? toCarePlanSteps(view.rawTasks) : null);
       } catch {
-        if (!cancelled) setCarePlanSteps(null);
+        if (seq === carePlanReqRef.current) setCarePlanSteps(null);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [selectedPatientId]);
 
   const handleAddService = () => {
@@ -117,6 +119,9 @@ export function ConsultOrdersScreen() {
       showToast(`Đã ký chẩn đoán cho ${selectedPatient.name} (chưa có chỉ định để gửi)`);
       return;
     }
+    // Claim the latest request token first, so any in-flight select-patient /active read (which may
+    // still return "no plan") is superseded and cannot overwrite the route we are about to generate.
+    const seq = (carePlanReqRef.current += 1);
     try {
       const resolved = await careplanApi.resolvePatient(selectedPatient.patientCode);
       const result = await careplanApi.generateCarePlan({
@@ -127,7 +132,7 @@ export function ConsultOrdersScreen() {
         serviceTypeNames: orderedServices,
       });
       // Show the SAME route the backend just generated (and the patient app will read).
-      setCarePlanSteps(toCarePlanSteps(result.route));
+      if (seq === carePlanReqRef.current) setCarePlanSteps(toCarePlanSteps(result.route));
       showToast(`Đã ký và gửi chỉ định cho ${selectedPatient.name}`);
     } catch {
       showToast(`Đã ký cục bộ, nhưng gửi chỉ định lên hệ thống thất bại cho ${selectedPatient.name}`);

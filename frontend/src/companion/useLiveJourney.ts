@@ -47,13 +47,19 @@ export function useLiveJourney(): { steps: JourneyStep[] | null } {
     let cancelled = false;
     let closeStream = () => {};
 
+    // Guards overlapping loads: load() runs on mount and again on every SSE event, so two responses
+    // can be in flight at once - only the newest may write, or a slow older read could revert to
+    // stale steps.
+    let latestLoad = 0;
+
     (async () => {
       try {
         const { patientId } = await careplanApi.resolvePatient(COMPANION_PATIENT_CODE);
 
         async function load() {
+          const seq = (latestLoad += 1);
           const view = await careplanApi.fetchActiveCarePlan(patientId);
-          if (cancelled) return;
+          if (cancelled || seq !== latestLoad) return;
           const rawTasks = view?.rawTasks ?? [];
           setSteps(rawTasks.length > 0 ? toJourneySteps(rawTasks) : null);
         }
