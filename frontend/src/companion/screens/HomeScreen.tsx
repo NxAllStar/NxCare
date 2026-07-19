@@ -4,7 +4,7 @@
  */
 import { JOURNEY_STEPS, PATIENT_NAME, type ScreenProps } from '../state';
 
-const TEAL = '#0E7490';
+const TEAL = '#2563EB';
 const MUTED = '#5A626B';
 
 export function HomeScreen({ s, a }: ScreenProps) {
@@ -15,7 +15,7 @@ export function HomeScreen({ s, a }: ScreenProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'vaicFadeUp .25s ease' }}>
         <div style={{ fontSize: 22, fontWeight: 700 }}>Xin chào {PATIENT_NAME}</div>
 
-        <div style={{ background: TEAL, borderRadius: 22, padding: 20, color: '#fff', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 8px 24px rgba(14,116,144,.25)' }}>
+        <div style={{ background: TEAL, borderRadius: 22, padding: 20, color: '#fff', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 8px 24px rgba(37,99,235,.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '.04em' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" /></svg>
             Lịch khám sắp tới
@@ -53,7 +53,7 @@ export function HomeScreen({ s, a }: ScreenProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'vaicFadeUp .25s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ width: 8, height: 8, borderRadius: 999, background: TEAL, animation: 'vaicPulseDot 1.6s infinite' }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: '.04em' }}>Đang đồng hành cùng chị</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: '.04em' }}>Đang đồng hành cùng bạn</span>
       </div>
 
       <div style={{ background: '#F7F8F9', border: '1px solid #E2E5E8', borderRadius: 24, padding: 22, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -66,7 +66,7 @@ export function HomeScreen({ s, a }: ScreenProps) {
         </div>
         <button onClick={a.toggleWhy} style={{ alignSelf: 'flex-start', marginTop: 10, height: 36, padding: '0 14px', borderRadius: 999, border: '1px solid #E2E5E8', background: '#fff', fontSize: 13, fontWeight: 700, color: '#12151A', cursor: 'pointer' }}>Vì sao chờ?</button>
         {s.whyOpen && (
-          <div style={{ marginTop: 8, fontSize: 14, color: MUTED, lineHeight: 1.5, background: '#fff', borderRadius: 12, padding: 12 }}>Phía trước còn 2 người và 1 ca cấp cứu vừa ưu tiên. Em sẽ báo ngay khi tới lượt chị.</div>
+          <div style={{ marginTop: 8, fontSize: 14, color: MUTED, lineHeight: 1.5, background: '#fff', borderRadius: 12, padding: 12 }}>Phía trước còn 2 người và 1 ca cấp cứu vừa ưu tiên.tôisẽ báo ngay khi tới lượt bạn.</div>
         )}
       </div>
 
@@ -77,7 +77,7 @@ export function HomeScreen({ s, a }: ScreenProps) {
 
       <div style={{ border: '1px solid #E2E5E8', borderRadius: 16, padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" fill={TEAL} /></svg>
-        <div style={{ fontSize: 14, color: MUTED, lineHeight: 1.5 }}><span style={{ color: '#12151A', fontWeight: 600 }}>AI đang làm gì cho chị: </span>theo dõi máy X-quang, giữ chỗ siêu âm và sẽ báo ngay nếu lộ trình thay đổi.</div>
+        <div style={{ fontSize: 14, color: MUTED, lineHeight: 1.5 }}><span style={{ color: '#12151A', fontWeight: 600 }}>AI đang làm gì cho bạn: </span>theo dõi máy X-quang, giữ chỗ siêu âm và sẽ báo ngay nếu lộ trình thay đổi.</div>
       </div>
 
       <button onClick={a.endVisitDemo} style={{ height: 40, border: 'none', background: 'none', color: '#9BA3AB', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Kết thúc buổi khám (demo)</button>

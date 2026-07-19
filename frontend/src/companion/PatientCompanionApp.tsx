@@ -15,7 +15,7 @@ import { JourneyScreen } from './screens/JourneyScreen';
 import { RecordsScreen } from './screens/RecordsScreen';
 import { MoreScreen } from './screens/MoreScreen';
 
-const TEAL = '#0E7490';
+const TEAL = '#2563EB';
 const INK = '#12151A';
 const MUTED = '#5A626B';
 const FAINT = '#9BA3AB';
@@ -114,7 +114,7 @@ export function PatientCompanionApp({ startAtHome = false }: { startAtHome?: boo
 
         {/* Assistant FAB */}
         {showFab && (
-          <button onClick={a.openChat} style={{ position: 'absolute', right: 18, bottom: 100, width: 58, height: 58, borderRadius: 999, background: TEAL, border: 'none', boxShadow: '0 10px 24px rgba(14,116,144,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 15 }}>
+          <button onClick={a.openChat} style={{ position: 'absolute', right: 18, bottom: 100, width: 58, height: 58, borderRadius: 999, background: TEAL, border: 'none', boxShadow: '0 10px 24px rgba(37,99,235,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 15 }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H9l-5 4V5z" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" /></svg>
           </button>
         )}
@@ -185,7 +185,7 @@ function TabButton({ label, active, onClick, icon }: { label: string; active: bo
 function NotifIcon({ kind }: { kind: 'ai' | 'ok' | 'warn' }) {
   if (kind === 'ai') {
     return (
-      <div style={{ width: 30, height: 30, borderRadius: 999, background: 'rgba(14,116,144,.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 30, height: 30, borderRadius: 999, background: 'rgba(37,99,235,.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" fill={TEAL} /></svg>
       </div>
     );
@@ -209,11 +209,11 @@ function ChatOverlay({ s, a }: { s: CompanionState; a: { closeChat: () => void; 
     <div style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 40, display: 'flex', flexDirection: 'column' }}>
       <div style={{ flexShrink: 0, padding: '56px 16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E5E8' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" /></svg>
-          </div>
+          <span style={{ width: 34, height: 34, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }} aria-hidden="true">
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 800, color: '#fff' }}>NxC</span>
+          </span>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Trợ lý Đồng hành</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>Nx<span style={{ color: TEAL }}>Care</span> AI Assistant</div>
             <div style={{ fontSize: 12, color: '#2F9D66', fontWeight: 600 }}>● Đang hoạt động</div>
           </div>
         </div>

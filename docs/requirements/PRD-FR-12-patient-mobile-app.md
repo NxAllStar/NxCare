@@ -61,7 +61,7 @@ turn the hospital experience from confusing and opaque into accompanied and tran
    nhân hỏi. / Proactive, not reactive: the app reminds, prepares, and explains ahead of time.
 
 **Persona dùng xuyên suốt tài liệu nguồn / persona used throughout the source brief:** bà Nguyễn Thị
-Lan, 68 tuổi, đau bụng dưới + sốt nhẹ, con gái (chị Hương) theo dõi từ xa - dùng để giữ mọi màn hình
+Lan, 68 tuổi, đau bụng dưới + sốt nhẹ, con gái (bạn Hương) theo dõi từ xa - dùng để giữ mọi màn hình
 bám sát trải nghiệm thật của một bệnh nhân lớn tuổi và người thân ở xa. This persona is a synthetic
 demo persona, not a real patient record.
 
@@ -386,7 +386,7 @@ the spec set - this table is a cross-reference, not a new agent inventory:
 ### 5.1 Golden path (13 steps)
 
 Persona used to keep every screen honest to a lived patient experience: bà Nguyễn Thị Lan, 68 tuổi,
-đau bụng dưới + sốt nhẹ, con gái (chị Hương) theo dõi từ xa.
+đau bụng dưới + sốt nhẹ, con gái (bạn Hương) theo dõi từ xa.
 
 ```
    MAN HINH APP              BENH NHAN TRAI NGHIEM             AI HO TRO (ngam)
@@ -424,7 +424,7 @@ Persona used to keep every screen honest to a lived patient experience: bà Nguy
 
 9  Chat tro ly     --->  "Toi doi qua, an truoc duoc   --->  Journey suy luan:
                         khong?" -> "Mau lay roi, chi an        mau da lay -> cho phep
-                        nhe duoc, em giu cho sieu am"         + doi thu tu
+                        nhe duoc,tôigiu cho sieu am"         + doi thu tu
 
 10 Con gai theo    --->  Chi Huong (o xa) nhan: "Me vua --->  Bring-someone: chia se
    doi tu xa             xong X-quang, dang cho sieu am"       trang thai realtime

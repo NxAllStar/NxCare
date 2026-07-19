@@ -189,8 +189,8 @@ export interface CompanionState {
 }
 
 const QUICK_REPLIES: Record<string, { user: string; ai: string }> = {
-  hungry: { user: 'Tôi đói quá, ăn trước được không?', ai: 'Máu của chị đã lấy rồi nên ăn nhẹ được. Em vẫn giữ chỗ siêu âm, chị cứ yên tâm.' },
-  wait: { user: 'Còn chờ bao lâu nữa?', ai: 'Còn khoảng 8–10 phút, phía trước còn 2 người. Em sẽ báo ngay khi tới lượt.' },
+  hungry: { user: 'Tôi đói quá, ăn trước được không?', ai: 'Máu của bạn đã lấy rồi nên ăn nhẹ được.tôivẫn giữ chỗ siêu âm, bạn cứ yên tâm.' },
+  wait: { user: 'Còn chờ bao lâu nữa?', ai: 'Còn khoảng 8–10 phút, phía trước còn 2 người.tôisẽ báo ngay khi tới lượt.' },
   where: { user: 'Phòng siêu âm ở đâu?', ai: 'Phòng S2, tầng 1 — đi thẳng từ đây khoảng 30 bước, bên tay phải quầy nước.' },
 };
 
@@ -294,7 +294,7 @@ export function initialState(startAtHome = false): CompanionState {
     locationMode: inMain ? 'inside' : 'outside',
     ...hashNav,
     chatOpen: false,
-    chatMessages: [{ from: 'ai', text: 'Chào chị, em đang theo dõi lộ trình khám hôm nay. Chị cần hỏi gì cứ nhắn em nhé.' }],
+    chatMessages: [{ from: 'ai', text: 'Chào bạn, tôi đang theo dõi lộ trình khám hôm nay. Bạn cần hỏi gì cứ nhắn tôi nhé.' }],
     notifOpen: false,
     familyOpen: false,
     activeProfile: 'lan',
@@ -324,7 +324,6 @@ export interface CompanionActions {
   goProfile: () => void;
   goInsurance: () => void;
   finishOnboarding: () => void;
-  googleSignIn: () => void;
   obBack: () => void;
   setProfileHeight: (v: string) => void;
   setProfileWeight: (v: string) => void;
@@ -438,7 +437,6 @@ export function useCompanionState(startAtHome = false): { s: CompanionState; a: 
     goProfile: () => patch({ onboardStep: 'profile' }),
     goInsurance: () => patch({ onboardStep: 'insurance' }),
     finishOnboarding: () => patch({ appStage: 'main' }),
-    googleSignIn: () => patch({ onboardStep: 'profile' }),
     obBack: () => patch((prev) => {
       const order: OnboardStep[] = ['login', 'otp', 'profile', 'insurance'];
       const i = order.indexOf(prev.onboardStep);

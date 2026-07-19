@@ -150,7 +150,7 @@ flowchart LR
 
 **Trigger**: Event bất thường - máy hỏng, phòng quá tải, đổi lịch bác sĩ, ca cấp cứu / Abnormal event.
 **Actors**: Coordinator Agent, Disruption Agent, Forecast Agent, role_coordinator.
-**Preconditions**: Có care plan đang chạy chịu ảnh hưởng / An active care plan is affected.
+**Preconditions**: Có care plan đang chạy bạnu ảnh hưởng / An active care plan is affected.
 **Outcome (success)**: Ảnh hưởng nhỏ được tự xử lý; ảnh hưởng lớn được điều phối viên duyệt; bệnh nhân được thông báo kèm lý do / Small impact auto-handled; large impact approved by a coordinator; patients notified with reasons.
 **Outcome (failure)**: Không có phương án hợp lệ -> giữ nguyên, cảnh báo điều phối viên / No valid option -> hold and alert coordinator.
 

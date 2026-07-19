@@ -48,6 +48,8 @@ export function JourneyPage() {
     if (!patientId || !patientCode) return;
     let cancelled = false;
     let closeStream = () => {};
+    // Guards overlapping loads (mount + each SSE event) so a slow older read cannot overwrite newer.
+    let latestLoad = 0;
     setLoadError(false);
 
     // The care plan comes from the real backend (TASK-038): resolve the patient's canonical UUID,
@@ -55,8 +57,9 @@ export function JourneyPage() {
     // `careplan.updated` event and this refetches. Notifications/appointments stay on the mock layer
     // (out of this task's scope). A backend miss (404) maps to the same empty state as before.
     async function loadCarePlan(patientUuid: string) {
+      const seq = (latestLoad += 1);
       const view = await careplanApi.fetchActiveCarePlan(patientUuid);
-      if (cancelled) return;
+      if (cancelled || seq !== latestLoad) return;
       if (!view) {
         setCarePlan(null);
         setTasks([]);
