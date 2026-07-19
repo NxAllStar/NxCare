@@ -48,9 +48,11 @@ const CONTENT = {
     stat2Val: '96.4%',
     stat3Label: 'Hiệu suất phòng khám tối ưu',
     stat3Val: '+35%',
+    statsNote: 'Số liệu mục tiêu từ kịch bản mô phỏng dòng bệnh nhân (SimPy), không phải kết quả triển khai thực tế.',
     footerText: 'NxCare & VAIC © 2026. Được thiết kế và vận hành bởi đội ngũ phát triển y tế thông minh.',
     techTitle: 'Nền tảng công nghệ tin cậy',
     techDesc: 'Hệ thống tích hợp mô phỏng dòng bệnh nhân SimPy, trợ lý AI LLM được neo chuẩn kiến thức y khoa và kiến trúc bảo mật đa lớp RBAC.',
+    headerCta: 'Trải nghiệm ngay',
     demoSectionTitle: 'Trải Nghiệm Trực Quan',
     demoSectionSub: 'Chọn giao diện bạn muốn thử nghiệm bên dưới',
     patientHeading: 'Ứng dụng Đồng hành Bệnh nhân',
@@ -99,35 +101,60 @@ export function LandingPage() {
     // (#2563EB) - the landing brands like the hospital website, not like the
     // teal patient app (index.css scoped token override).
     <div className="console-surface relative min-h-screen overflow-x-hidden bg-background font-sans text-foreground">
-      {/* Ambient background wash - calm clinical, same treatment as the staff login */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(70rem 45rem at 15% -10%, hsl(var(--primary) / 0.08), transparent 60%),' +
-            'radial-gradient(55rem 40rem at 110% 25%, hsl(var(--primary) / 0.06), transparent 55%)',
-        }}
-      />
+      {/* Ambient background - calm clinical: radial washes, a faint blueprint
+          grid fading out of the hero, and slow-drifting glow blobs. All
+          token-based; the drift is transform-only and disabled under
+          prefers-reduced-motion (index.css). */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(70rem 45rem at 15% -10%, hsl(var(--primary) / 0.08), transparent 60%),' +
+              'radial-gradient(55rem 40rem at 110% 25%, hsl(var(--primary) / 0.06), transparent 55%)',
+          }}
+        />
+        <div
+          className="absolute inset-x-0 top-0 h-[42rem]"
+          style={{
+            backgroundImage:
+              'linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),' +
+              'linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px)',
+            backgroundSize: '3.5rem 3.5rem',
+            maskImage: 'radial-gradient(ellipse 80% 90% at 50% 0%, black 30%, transparent 78%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 80% 90% at 50% 0%, black 30%, transparent 78%)',
+          }}
+        />
+        <div className="animate-float-a absolute -top-24 right-[-8%] h-[26rem] w-[26rem] rounded-full bg-primary/10 blur-3xl" />
+        <div className="animate-float-b absolute left-[-10%] top-[38rem] h-[30rem] w-[30rem] rounded-full bg-primary/5 blur-3xl" />
+        <div className="animate-float-a absolute bottom-40 right-[-6%] h-[24rem] w-[24rem] rounded-full bg-success/10 blur-3xl" />
+      </div>
 
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                              */}
       {/* ------------------------------------------------------------------ */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/85 px-6 py-3.5 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-center">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/landing" className="flex items-center gap-3">
             <BrandMark size={44} />
             <span className="select-none text-2xl font-extrabold tracking-tight text-foreground">
               Nx<span className="text-primary">Care</span>
             </span>
           </a>
+          <a
+            href="#demo"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30"
+          >
+            {c.headerCta}
+            <ChevronRightIcon className="h-4 w-4" />
+          </a>
         </div>
       </header>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Hero                                                                */}
+      {/* Hero - centered copy, product screenshots side by side below         */}
       {/* ------------------------------------------------------------------ */}
-      <section className="relative mx-auto max-w-6xl px-6 pb-20 pt-20">
+      <section className="relative mx-auto max-w-6xl px-6 pb-24 pt-16 lg:pt-20">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
           <div className="inline-flex animate-fade-up items-center gap-2 rounded-pill border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-primary">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
@@ -167,30 +194,17 @@ export function LandingPage() {
             </a>
           </div>
         </div>
-      </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Product showcase - phone + console mockups                          */}
-      {/* ------------------------------------------------------------------ */}
-      <section className="relative mx-auto max-w-6xl px-6 pb-24">
-        <div className="grid items-center gap-10 lg:grid-cols-12">
-          {/* Patient companion app - real screenshot of /?home=1 (public/landing/) */}
-          <div className="flex justify-center lg:col-span-5">
-            <div className="w-[300px] overflow-hidden rounded-[44px] shadow-2xl shadow-primary/15 ring-1 ring-border">
-              <img
-                src="/landing/patient-app.png"
-                width={780}
-                height={1688}
-                loading="lazy"
-                alt="Màn hình Trang chủ của ứng dụng đồng hành bệnh nhân: bước hiện tại Chụp X-quang, còn khoảng 12 phút"
-                className="block h-auto w-full"
-              />
-            </div>
-          </div>
-
-          {/* Hospital console - real screenshot of /console/dashboard (public/landing/) */}
-          <div className="flex flex-col justify-center gap-6 lg:col-span-7">
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/5">
+        {/* Product screenshots side by side - real captures of /console/dashboard
+            and /?home=1 (public/landing/). The phone is sized to ~21.5% of the row
+            so both frames end up nearly the same height, bottoms aligned. */}
+        <div className="relative mt-16 animate-fade-up">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-x-8 -inset-y-6 rounded-[40px] bg-primary/5 blur-2xl"
+          />
+          <div className="relative flex flex-col items-center gap-8 md:flex-row md:items-end">
+            <div className="w-full flex-1 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/15">
               <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-4 py-2.5">
                 <span className="h-3 w-3 rounded-full bg-danger/70" />
                 <span className="h-3 w-3 rounded-full bg-warning/70" />
@@ -198,11 +212,22 @@ export function LandingPage() {
                 <span className="ml-2 font-mono text-xs text-muted-foreground">nxcare-console-dashboard</span>
               </div>
               <img
-                src="/landing/console-dashboard.png"
-                width={3200}
-                height={1800}
-                loading="lazy"
+                src="/landing/console-dashboard.webp"
+                width={1920}
+                height={1080}
+                loading="eager"
+                fetchPriority="high"
                 alt="Dashboard điều phối của console bệnh viện: KPI, bản đồ tải, dự báo tải theo giờ và hàng chờ duyệt"
+                className="block h-auto w-full"
+              />
+            </div>
+            <div className="w-[220px] shrink-0 overflow-hidden rounded-[28px] bg-card shadow-xl shadow-primary/15 ring-1 ring-border transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/25 md:w-[21.5%]">
+              <img
+                src="/landing/patient-app.webp"
+                width={780}
+                height={1688}
+                loading="eager"
+                alt="Màn hình Trang chủ của ứng dụng đồng hành bệnh nhân: bước hiện tại Chụp X-quang, còn khoảng 12 phút"
                 className="block h-auto w-full"
               />
             </div>
@@ -245,7 +270,7 @@ export function LandingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Demo portal cards                                                   */}
       {/* ------------------------------------------------------------------ */}
-      <section className="mx-auto max-w-6xl px-6 py-24">
+      <section id="demo" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-24">
         <div className="mx-auto mb-14 flex max-w-3xl flex-col gap-3 text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">{c.demoSectionTitle}</h2>
           <p className="text-base text-muted-foreground md:text-lg">{c.demoSectionSub}</p>
@@ -335,6 +360,7 @@ export function LandingPage() {
             );
           })}
         </div>
+        <p className="mx-auto mt-6 max-w-6xl text-center text-xs text-muted-foreground/80">{c.statsNote}</p>
       </section>
 
       {/* ------------------------------------------------------------------ */}
