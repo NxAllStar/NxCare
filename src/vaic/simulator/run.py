@@ -8,8 +8,21 @@ from __future__ import annotations
 
 import argparse
 
+from .areas import AreaConfig
+from .evaluation import compare_metrics, evaluate_ab_multi, headline, headline_aggregate
 from .harness import run_ab
 from .metrics import Metrics
+
+# A high-variance, room-constrained area at moderate load: the regime where least-crowded-first
+# routing (the policy the Coordinator applies, FR-02/FR-10) beats FIFO on average. In the full
+# hospital the binding constraint is shared equipment, not room choice, so routing alone barely
+# moves the average - an honest distinction, and why the Disruption agent reallocates the bottleneck
+# rather than just re-routing. The A/B is replicated over many seeds since a single cohort is noisy.
+_CONGESTED_DEMO = (
+    AreaConfig(name="busy", num_rooms=4, weight=1.0, min_service_min=5.0, max_service_min=45.0),
+)
+_CONGESTED_DEMO_PATIENTS = 40
+_CONGESTED_DEMO_SEEDS = range(200, 230)
 
 
 def _format_metrics(policy_name: str, metrics: Metrics) -> str:
@@ -44,10 +57,27 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
+    print("### Full hospital (DEFAULT_AREAS) ###\n")
     results = run_ab(seed=args.seed, num_patients=args.patients)
     for policy_name, metrics in results.items():
         print(_format_metrics(policy_name, metrics))
         print()
+    print("== headline (full hospital) ==")
+    print(headline(compare_metrics(results["fifo"], results["load_aware"])))
+    print(
+        "note: the full hospital is equipment-bound, so room routing alone barely moves the "
+        "average - reallocating the bottleneck is the Disruption agent's job, not routing."
+    )
+    print()
+
+    print("### Congested room-constrained area (replicated A/B) ###\n")
+    aggregate = evaluate_ab_multi(
+        seeds=_CONGESTED_DEMO_SEEDS,
+        num_patients=_CONGESTED_DEMO_PATIENTS,
+        area_configs=_CONGESTED_DEMO,
+    )
+    print("== headline (congested area, averaged over seeds) ==")
+    print(headline_aggregate(aggregate))
 
 
 if __name__ == "__main__":
