@@ -12,6 +12,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from vaic.api.coordinator_routes import build_coordinator_router
+from vaic.auth import Account, Role
+from vaic.auth.jwt_tokens import create_access_token
 from vaic.models import (
     CarePlan,
     CarePlanStatus,
@@ -25,6 +27,15 @@ from vaic.models import (
 from vaic.state import InMemoryRepository
 
 DEPT = UUID("00000000-0000-0000-0000-0000000000e0")
+
+
+def _auth_headers(role: Role) -> dict[str, str]:
+    token = create_access_token(Account(username=f"test_{role.value}", role=role))
+    return {"Authorization": f"Bearer {token}"}
+
+
+_COORDINATOR = _auth_headers(Role.COORDINATOR)
+_PATIENT = _auth_headers(Role.PATIENT)
 
 
 def _resource(repo, *, available=True):
@@ -94,9 +105,7 @@ def test_large_disruption_appears_in_approval_queue_then_approve():
     assert len(queue["pendingApproval"]) == 1
     did = queue["pendingApproval"][0]["disruptionId"]
 
-    approve = client.post(
-        f"/coordinator/disruptions/{did}/approve", json={"decidedBy": str(uuid4())}
-    )
+    approve = client.post(f"/coordinator/disruptions/{did}/approve", headers=_COORDINATOR)
     assert approve.status_code == 200
     assert approve.json()["executed"] is True and approve.json()["status"] == "APPROVED"
     # queue now empty
@@ -108,9 +117,7 @@ def test_reject_keeps_plan_and_empties_queue():
     trigger = client.post("/coordinator/disruptions", json={"resourceId": str(failed.id)})
     did = trigger.json()["disruptionId"]
 
-    reject = client.post(
-        f"/coordinator/disruptions/{did}/reject", json={"decidedBy": str(uuid4())}
-    )
+    reject = client.post(f"/coordinator/disruptions/{did}/reject", headers=_COORDINATOR)
     assert reject.status_code == 200 and reject.json()["status"] == "REJECTED"
     # original plan intact: every task still owned by the failed resource
     assert all(repo.get(Task, t.id).owner_id == failed.id for t in tasks)
@@ -118,7 +125,32 @@ def test_reject_keeps_plan_and_empties_queue():
 
 def test_approve_unknown_disruption_is_409():
     client, repo, failed, alts, tasks = _client(1)
-    res = client.post(
-        f"/coordinator/disruptions/{uuid4()}/approve", json={"decidedBy": str(uuid4())}
-    )
+    res = client.post(f"/coordinator/disruptions/{uuid4()}/approve", headers=_COORDINATOR)
     assert res.status_code == 409
+
+
+def test_approve_without_a_token_is_401():
+    client, repo, failed, alts, tasks = _client(7, alternates=2)
+    trigger = client.post("/coordinator/disruptions", json={"resourceId": str(failed.id)})
+    did = trigger.json()["disruptionId"]
+    res = client.post(f"/coordinator/disruptions/{did}/approve")
+    assert res.status_code == 401
+    # queue still holds it: no unauthenticated approval slipped through
+    assert len(client.get("/coordinator/disruptions").json()["pendingApproval"]) == 1
+
+
+def test_approve_by_a_non_coordinator_role_is_403():
+    client, repo, failed, alts, tasks = _client(7, alternates=2)
+    trigger = client.post("/coordinator/disruptions", json={"resourceId": str(failed.id)})
+    did = trigger.json()["disruptionId"]
+    res = client.post(f"/coordinator/disruptions/{did}/approve", headers=_PATIENT)
+    assert res.status_code == 403
+    assert len(client.get("/coordinator/disruptions").json()["pendingApproval"]) == 1
+
+
+def test_reject_without_a_token_is_401():
+    client, repo, failed, alts, tasks = _client(7, alternates=2)
+    trigger = client.post("/coordinator/disruptions", json={"resourceId": str(failed.id)})
+    did = trigger.json()["disruptionId"]
+    res = client.post(f"/coordinator/disruptions/{did}/reject")
+    assert res.status_code == 401

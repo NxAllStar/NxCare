@@ -14,13 +14,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from ..agents.core import CoordinatorEvent, build_coordinator_stack, build_snapshot
 from ..agents.core.disruption import DisruptionError, DisruptionOutcome
+from ..auth import Account, authorize
+from ..auth import Forbidden as AuthForbidden
 from ..models import DisruptionEvent, DisruptionEventType, DisruptionStatus, Resource
 from ..state import Repository
+from .deps import get_current_account
 
 # Event-type string (API) -> coordinator event kind the rule-based brain routes on.
 _EVENT_KIND = {
@@ -83,12 +86,6 @@ class TriggerDisruptionRequest(BaseModel):
 
     resourceId: str
     eventType: str = DisruptionEventType.EQUIPMENT_FAILURE.value
-
-
-class DecisionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    decidedBy: str  # the coordinator making the call - a Resource id, audited as the decider
 
 
 def _outcome_out(outcome: DisruptionOutcome) -> DisruptionOutcomeOut:
@@ -173,18 +170,33 @@ def build_coordinator_router(repo: Repository) -> APIRouter:
         return _outcome_out(outcome)
 
     @router.post("/disruptions/{disruption_id}/approve", response_model=DisruptionOutcomeOut)
-    def approve(disruption_id: str, body: DecisionRequest) -> DisruptionOutcomeOut:
+    def approve(
+        disruption_id: str, account: Account = Depends(get_current_account)
+    ) -> DisruptionOutcomeOut:
+        # FR-09 human-in-the-loop gate: `decided_by` is the authenticated principal, never a
+        # caller-supplied id (a spoofable id would let any token holder approve a large re-plan
+        # and have it audited under someone else's name).
+        try:
+            authorize(account, "approve_replan")
+        except AuthForbidden as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
         did = _parse_uuid(disruption_id, "disruption")
-        decided_by = _parse_uuid(body.decidedBy, "decidedBy")
+        decided_by = account.resource_id or account.id
         try:
             return _outcome_out(stack.disruption.approve(did, decided_by=decided_by))
         except DisruptionError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @router.post("/disruptions/{disruption_id}/reject", response_model=DisruptionOutcomeOut)
-    def reject(disruption_id: str, body: DecisionRequest) -> DisruptionOutcomeOut:
+    def reject(
+        disruption_id: str, account: Account = Depends(get_current_account)
+    ) -> DisruptionOutcomeOut:
+        try:
+            authorize(account, "reject_replan")
+        except AuthForbidden as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
         did = _parse_uuid(disruption_id, "disruption")
-        decided_by = _parse_uuid(body.decidedBy, "decidedBy")
+        decided_by = account.resource_id or account.id
         try:
             return _outcome_out(stack.disruption.reject(did, decided_by=decided_by))
         except DisruptionError as exc:

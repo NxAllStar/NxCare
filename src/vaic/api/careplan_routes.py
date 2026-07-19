@@ -47,7 +47,7 @@ from ..agents.careplan.care_plan import (
     build_create_task_tool,
     generate_care_plan,
 )
-from ..agents.careplan.gate import ConfirmPaymentIn, build_confirm_payment_tool
+from ..agents.careplan.gate import build_confirm_payment_tool
 from ..agents.careplan.orders import (
     build_create_diagnosis_tool,
     build_create_service_order_tool,
@@ -78,7 +78,7 @@ from ..models import (
 from ..state import Repository
 from ..state.sql.repository import AsyncPostgresRepository
 from ..state.sql.sync_adapter import PostgresRepositorySyncAdapter
-from ..tools import AuditLog, ConstraintChecker, ToolError, ToolRegistry
+from ..tools import Action, AuditLog, ConstraintChecker, ToolError, ToolRegistry
 from .demo_state import DEMO_CAREPLAN_STATIONS
 from .deps import get_async_repo, get_current_account, get_sync_adapter
 from .events import CarePlanEventBus
@@ -527,26 +527,36 @@ async def list_care_plan_tasks(
     return [t for t in tasks if await matches_scope_async(repo, account, t, scope)]
 
 
-class ConfirmPaymentRequest(CamelModel):
-    actor_role: str
-    confirmed_by: UUID
-
-
 @router.post("/care-plans/{care_plan_id}/tasks/{task_id}/proceed", status_code=200)
 async def confirm_proceed(
     care_plan_id: UUID,
     task_id: UUID,
-    body: ConfirmPaymentRequest,
     account: Account = Depends(get_current_account),
     adapter: PostgresRepositorySyncAdapter = Depends(get_sync_adapter),
 ):
-    """BR-11 proceed gate (FR-05): flips a Task's Payment to PAID, LOCKED -> PENDING."""
+    """BR-11 proceed gate (FR-05): flips a Task's Payment to PAID, LOCKED -> PENDING.
+
+    `actor_role`/`confirmed_by` are derived from the authenticated FR-18 `account`, never taken
+    from the request body (TASK-034, from TASK-008 review cM7/sM2): a caller-supplied actor_role
+    would let any token holder self-assert `role_coordinator` and defeat BR-11 ("only an
+    authorised source flips PAID; no agent flips it"). Routed through `ActionExecutor` (not
+    `tool.run` directly) so the flip is audited (FR-13) instead of leaving no trace.
+    """
     del care_plan_id  # part of the URL for readability/REST nesting; the tool keys off task_id
-    tool = build_confirm_payment_tool()
-    params = ConfirmPaymentIn(
-        task_id=task_id, actor_role=body.actor_role, confirmed_by=body.confirmed_by
+    executor = _build_executor(adapter)
+    action = Action(
+        tool="confirm_payment",
+        actor=str(account.id),
+        params={
+            "task_id": str(task_id),
+            "actor_role": account.role.value,
+            "confirmed_by": str(account.resource_id or account.id),
+        },
+        reasoning="staff counter-scan payment confirmation (BR-36)",
     )
-    try:
-        return await run_in_threadpool(tool.run, params.model_dump(), adapter)
-    except ToolError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result = await run_in_threadpool(executor.execute, action)
+    if not result.allowed:
+        raise HTTPException(status_code=403, detail=result.reason)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail=result.reason)
+    return result.output
