@@ -1,86 +1,63 @@
-"""HTTP surface for one Intake Agent chat turn (FR-01, FR-02, BF-05).
+"""HTTP surface for the patient assistant: one chat endpoint, plus confirm.
 
-Wires the existing, already-tested domain logic (`extract_triage`, `recommend_slots`) behind a
-single endpoint instead of duplicating triage/emergency rules in the frontend. Patient chat text is
-untrusted content (NFR-SEC-11): it is passed into `extract_triage` as DATA and is never echoed back
-beyond the fixed reply strings below.
+A single `/chat` turn drives everything (there is no separate triage/slot endpoint any more): the
+patient's message is untrusted DATA (NFR-SEC-11), a deterministic red-flag check gates emergencies
+(BF-05), and otherwise the assistant agent decides intent - it suggests the least-crowded arrival
+times when the patient is asking *when to come*, and just replies normally otherwise. Reservation
+data is retrieved from the store in code (`summarize_reservations`) and the agent reasons over it
+(grounding contract); the model never invents counts and its output is schema-validated before use.
 
-Triage extraction uses the real `HttpTriageLLM` (an OpenAI-compatible client against
-`LLM_API_BASE_URL`) when `Settings.chat_configured`, built once at router-construction time by
-`build_triage_llm` (`agents/intake/llm_client.py`). A per-request provider failure or malformed
-output degrades to the deterministic `RuleBasedTriageLLM` for that one request rather than a 500 -
-the same "validation failure is a handled outcome" posture as the forecast baseline (ai-governance.md).
-
-`DemoForecastLLM` is still a deterministic placeholder: no forecast provider is wired yet
-(model-policy.md gates real provider calls, and this task's scope is the triage/chat path). It
-always raises `ForecastLLMError`, which `estimate_wait` already handles by falling back to the
-tested deterministic BASELINE path (BR-03) - no new math is invented here.
+The assistant uses the real `HttpArrivalChatLLM` (OpenAI-compatible against `LLM_API_BASE_URL`) when
+a provider is configured, else a deterministic fallback - "real agent when configured, safe
+deterministic behaviour otherwise" (ai-governance.md). `/confirm` logs the patient's accepted time
+and, in the same call, "takes a number": it issues the consult `QueueTicket` (ADR-003) for the new
+appointment, so `/status` can later answer "when is my turn". `/status` is a read-only lookup of
+which of four situations a patient is in (pre-diagnosis, awaiting consult, plan not queued yet, or
+a task in queue); `/queue` is the department-wide equivalent for a patient who has not taken a
+number yet; `/tasks` lists every task in the patient's Care Plan with its own status, once a
+diagnosis has produced one - see `agents/intake/patient_status.py`.
 """
 
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
-from typing import Any
-from uuid import uuid4
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter
-from pydantic import BaseModel, ConfigDict, ValidationError
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict
 
+from ..agents.intake.arrival import confirm_arrival_slot, summarize_reservations
+from ..agents.intake.arrival_chat import respond_to_chat
+from ..agents.intake.arrival_llm_client import build_arrival_chat_llm
 from ..agents.intake.emergency import detect_emergency
-from ..agents.intake.llm_client import RuleBasedTriageLLM, TriageLLMError, build_triage_llm
-from ..agents.intake.slots import recommend_slots
-from ..agents.intake.triage import extract_triage
-from ..forecast import ForecastLLMError
+from ..agents.intake.patient_status import (
+    consult_queue_overview,
+    derive_patient_status,
+    issue_consult_ticket,
+    list_patient_tasks,
+    service_queue_overview,
+)
+from ..agents.intake.task_order import collect_service_queues, suggest_task_order
+from ..agents.intake.task_order_llm_client import build_task_order_llm
+from ..models import Department, Patient, PriorityLevel, ServiceType
 from ..state import Repository
-from .demo_state import DEMO_OWNER_BUSY, DEMO_OWNER_LIGHT
+from .demo_state import ARRIVAL_DEMO_ANCHOR, ARRIVAL_DEMO_DAYS, ARRIVAL_DEPARTMENT_ID
 
 logger = logging.getLogger(__name__)
 
-# Same fixed reference date the intake booking path uses (agents/intake/agent.py), so a slot's
-# `start` here lines up with what a later `book_appointment` call against `hour` would produce.
-_BOOKING_REFERENCE_DATE = datetime(2026, 1, 1, tzinfo=UTC)
-_DEMO_HOURS = [9, 10]
+_DEFAULT_SPECIALTY = "GENERAL_MEDICINE"
 
-_EMERGENCY_REPLY_VI = (
-    "Trieu chung ban mo ta co the la tinh huong khan cap. Vui long lien he nhan vien y te ngay "
-    "hoac goi 115 - minh chua the xep lich thuong quy trong truong hop nay."
-)
-_ROUTINE_REPLY_VI = (
-    "Cam on ban da mo ta trieu chung. Day la goi y dinh tuyen, khong phai chan doan - minh de xuat "
-    "vai khung gio it dong ben duoi."
+_EMERGENCY_REPLY = (
+    "The symptoms you describe may be an emergency. Please contact a medical staff member now or "
+    "call emergency services - I can't schedule a routine visit in this case."
 )
 
 
-class DemoForecastLLM:
-    """Deterministic stand-in that always defers to the tested BASELINE fallback (see docstring)."""
-
-    def estimate_wait(self, features: dict[str, Any]) -> dict[str, Any]:
-        del features
-        raise ForecastLLMError("no live forecast provider configured in this demo")
-
-
-_FORECAST_LLM = DemoForecastLLM()
-
-
-def _load_level(eta_minutes: float) -> str:
-    if eta_minutes < 20:
-        return "low"
-    if eta_minutes < 45:
-        return "medium"
-    return "high"
-
-
-def _eta_label(eta_minutes: float) -> str:
-    # A range, never a hard number (PRD-FR-12 6.1) - bucketed to the nearest 15-minute band.
-    low = int(eta_minutes // 15) * 15
-    return f"~{low}-{low + 15} phut"
-
-
-class IntakeChatRequest(BaseModel):
+class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    text: str
+    text: str  # the patient's message; untrusted content, used as DATA only
 
 
 class ChatMessageOut(BaseModel):
@@ -93,103 +70,352 @@ class ChatMessageOut(BaseModel):
     aiGenerated: bool
 
 
-class RankedSlotSuggestionOut(BaseModel):
+class ArrivalBlockOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    slotId: str
-    specialty: str
-    start: str
-    etaLabel: str
-    loadLevel: str
+    date: str  # YYYY-MM-DD
+    startHour: int
+    endHour: int
+    reservationCount: int
+    reason: str
 
 
-class IntakeChatResponse(BaseModel):
+class ChatResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    reply: ChatMessageOut
-    suggestedSlots: list[RankedSlotSuggestionOut]
+    reply: ChatMessageOut  # the agent's natural-language answer
+    intent: str  # "SCHEDULE" | "CHAT" | "EMERGENCY"
+    recommendations: list[ArrivalBlockOut]  # time blocks (empty unless intent == SCHEDULE)
     emergencySuspected: bool
+
+
+class ConfirmRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    patientId: str
+    start: str  # ISO datetime of the accepted time
+    specialty: str | None = None  # optional; a time-block arrival is not specialty-bound yet
+    ownerId: str | None = None  # optional; the doctor is assigned at the desk on arrival
+
+
+class ConfirmResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    appointmentId: str
+    ownerId: str | None
+    start: str
+    status: str
+    ticketLabel: str  # the consult queue number just issued, e.g. "DepA-00001"
+    patientCode: str  # the patient's scannable code (FR-17), created here if it did not exist
+
+
+class QueuePositionOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str | None  # the QueueTicket's label; null when the position is a Task, not a ticket
+    peopleAhead: int
+    etaMinutes: int
+
+
+class PlanTaskOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    taskId: str
+    serviceOrderId: str
+    sequenceIndex: int
+
+
+class PatientStatusOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: str  # PRE_DIAGNOSIS | AWAITING_CONSULT | PLAN_NOT_QUEUED | TASK_IN_QUEUE
+    queue: QueuePositionOut | None  # set for AWAITING_CONSULT and TASK_IN_QUEUE
+    planTasks: list[PlanTaskOut]  # set for PLAN_NOT_QUEUED, in the plan's own suggested order
+
+
+class QueueOverviewOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    peopleWaiting: int  # everyone currently WAITING/CALLED for a general checkup, not per-patient
+    etaMinutes: int
+
+
+class TaskStatusOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    taskId: str
+    serviceOrderId: str
+    serviceTypeCode: str  # e.g. "BLOOD_TEST"; empty string if the ServiceType could not be found
+    serviceTypeLabel: str  # human-readable, e.g. "Blood Test"
+    executionStatus: str  # LOCKED | PENDING | IN_PROGRESS | DONE | CANCELLED
+    paymentStatus: str  # UNPAID | PAID
+    sequenceIndex: int
+    queue: QueuePositionOut | None  # set only while the task is in_queue (paid, not yet finished)
+
+
+class TaskListOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tasks: list[TaskStatusOut]  # every task in the patient's Care Plan, in sequence order
+
+
+class ServiceQueueOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    serviceTypeId: str
+    peopleWaiting: int  # tasks of this service type currently in a queue (paid, not finished)
+    etaMinutes: int  # time to clear that queue (sum of their estimated durations)
+
+
+class OrderedServiceOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    taskId: str
+    serviceTypeCode: str
+    serviceTypeLabel: str
+    peopleWaiting: int
+    etaMinutes: int
+    reason: str  # why this service is placed here in the order
+
+
+class SuggestTaskOrderRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    patientId: str
+
+
+class TaskOrderOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str  # patient-facing summary of the suggested order
+    order: list[OrderedServiceOut]  # the services to do, in the suggested order
 
 
 def build_intake_router(repo: Repository) -> APIRouter:
     """Bind the demo `Repository` into the router's closure - one repo instance per running app.
 
-    A fresh `APIRouter()` per call, never a module-level singleton: a module-level router would
-    accumulate one `/chat` handler per call to this function (each bound to whatever `repo` was
-    passed that time), and since `vaic.api.__init__` imports `app.py` - which calls `create_app()`
-    at import time - merely IMPORTING this module anywhere already registers one such handler.
-    Route-level tests that build a second, independent router (their own isolated repo) would then
-    silently hit the first-registered handler's repo instead of their own.
+    The router is constructed here (not a module-global) so each call returns an independent router
+    bound to its own repo; a shared global would re-register routes and leak repos across callers.
     """
     router = APIRouter(prefix="/api/intake", tags=["intake"])
-    triage_llm = build_triage_llm()  # real HttpTriageLLM when configured, else RuleBasedTriageLLM
+    assistant_llm = build_arrival_chat_llm()  # real client when configured, else deterministic
+    task_order_llm = build_task_order_llm()  # same: real provider when configured, else rule-based
 
-    @router.post("/chat", response_model=IntakeChatResponse)
-    def chat(body: IntakeChatRequest) -> IntakeChatResponse:
-        try:
-            triage = extract_triage(body.text, triage_llm)
-            logger.info(
-                "intake triage via real provider: specialty=%s priority=%s",
-                triage.specialty,
-                triage.priority_level,
-            )
-        except (TriageLLMError, ValidationError) as exc:
-            # Degrade this one request to the deterministic extractor rather than a 500
-            # (ai-governance.md "validation failure is a handled outcome") - never trust or retry
-            # with a half-parsed provider response. Log the class of failure, never the transcript
-            # (D8, NFR-SEC-11): `exc` here is a provider/schema error message, not patient content.
-            logger.warning("intake triage provider degraded to rule-based fallback: %s", exc)
-            triage = extract_triage(body.text, RuleBasedTriageLLM())
-        # Deterministic override belt-and-suspenders (AC-01.2): extract_triage already runs this
-        # check internally, re-checking here costs nothing and keeps this handler self-evident.
-        emergency = triage.emergency_suspected or detect_emergency(body.text, triage.priority_level)
+    @router.post("/chat", response_model=ChatResponse)
+    def chat(body: ChatRequest) -> ChatResponse:
+        """One chat turn: emergency-gate, then the agent replies (and suggests times on intent)."""
         now = datetime.now(UTC).isoformat()
 
-        if emergency:
-            return IntakeChatResponse(
-                reply=ChatMessageOut(
-                    id=str(uuid4()),
-                    sender="agent",
-                    text=_EMERGENCY_REPLY_VI,
-                    createdAt=now,
-                    aiGenerated=True,
-                ),
-                suggestedSlots=[],
+        def _message(text: str) -> ChatMessageOut:
+            return ChatMessageOut(
+                id=str(uuid4()), sender="agent", text=text, createdAt=now, aiGenerated=True
+            )
+
+        # Safety gate first (BF-05): a red-flag message is never answered with a scheduling
+        # suggestion. Deterministic check on the raw text - no LLM needed to refuse an emergency.
+        if detect_emergency(body.text, PriorityLevel.ROUTINE):
+            return ChatResponse(
+                reply=_message(_EMERGENCY_REPLY),
+                intent="EMERGENCY",
+                recommendations=[],
                 emergencySuspected=True,
             )
 
-        # The two demo Resources are generic stand-ins, not specialty-mapped (no specialty->owner
-        # directory exists in this demo yet - slots.py's `recommend_slots` docstring notes that
-        # mapping is the caller's responsibility). The specialty LABEL shown to the patient is still
-        # the real triage classification, not a hardcoded value.
-        proposals = recommend_slots(
-            repo,
-            triage.specialty,
-            [DEMO_OWNER_LIGHT, DEMO_OWNER_BUSY],
-            _DEMO_HOURS,
-            _FORECAST_LLM,
-        )
-        suggested = [
-            RankedSlotSuggestionOut(
-                slotId=f"{proposal.owner_id}-{proposal.hour}",
-                specialty=triage.specialty,
-                start=(_BOOKING_REFERENCE_DATE + timedelta(hours=proposal.hour)).isoformat(),
-                etaLabel=_eta_label(proposal.eta_minutes),
-                loadLevel=_load_level(proposal.eta_minutes),
-            )
-            for proposal in proposals
-        ]
+        # Grounding: search the store for reservations vs working hours (code), then the agent
+        # reasons over that summary and decides intent itself.
+        summary = summarize_reservations(repo, ARRIVAL_DEMO_ANCHOR, ARRIVAL_DEMO_DAYS)
+        reply = respond_to_chat(body.text, summary, assistant_llm)
+        logger.info("assistant intent=%s blocks=%d", reply.intent, len(reply.recommendations))
 
-        return IntakeChatResponse(
-            reply=ChatMessageOut(
-                id=str(uuid4()),
-                sender="agent",
-                text=_ROUTINE_REPLY_VI,
-                createdAt=now,
-                aiGenerated=True,
-            ),
-            suggestedSlots=suggested,
+        return ChatResponse(
+            reply=_message(reply.message),
+            intent=reply.intent,
+            recommendations=[
+                ArrivalBlockOut(
+                    date=block.date,
+                    startHour=block.start_hour,
+                    endHour=block.end_hour,
+                    reservationCount=block.reservation_count,
+                    reason=block.reason,
+                )
+                for block in reply.recommendations
+            ],
             emergencySuspected=False,
         )
+
+    @router.post("/confirm", response_model=ConfirmResponse)
+    def confirm(body: ConfirmRequest) -> ConfirmResponse:
+        """Log the patient's accepted time (PROPOSED Appointment) and issue their queue number."""
+        try:
+            patient_id = UUID(body.patientId)
+            owner_id = UUID(body.ownerId) if body.ownerId else None
+            start = datetime.fromisoformat(body.start)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="invalid id or datetime") from exc
+
+        appointment = confirm_arrival_slot(
+            repo, patient_id, body.specialty or _DEFAULT_SPECIALTY, start, owner_id
+        )
+
+        # Ensure a Patient record exists: the scan step (FR-17) needs a scannable `patient_code`,
+        # and priority_band on the ticket is copied from it. Get-or-create so a repeat confirm keeps
+        # the same code. A real intake would create the Patient earlier; the demo does it here.
+        patient = repo.get(Patient, patient_id)
+        if patient is None:
+            patient = repo.save(
+                Patient(
+                    id=patient_id,
+                    full_name="",  # PII - not collected in this demo flow (NFR-SEC-01)
+                    patient_code=f"P-{uuid4().hex[:8].upper()}",
+                )
+            )
+
+        # "Taking a number": issue the consult QueueTicket in the same call (there is no separate
+        # check-in step yet) so /status can answer "when is my turn" right away.
+        department = repo.get(Department, ARRIVAL_DEPARTMENT_ID)
+        if department is None:
+            raise HTTPException(status_code=500, detail="arrival department not seeded")
+        ticket = issue_consult_ticket(
+            repo, department, appointment.id, patient_id, patient.priority_level
+        )
+
+        return ConfirmResponse(
+            appointmentId=str(appointment.id),
+            ownerId=str(appointment.owner_id) if appointment.owner_id else None,
+            start=appointment.slot_start.isoformat(),
+            status=appointment.status.value,
+            ticketLabel=ticket.ticket_label,
+            patientCode=patient.patient_code,
+        )
+
+    @router.get("/queue", response_model=QueueOverviewOut)
+    def queue_overview() -> QueueOverviewOut:
+        """How many people are waiting for a general checkup right now (no patient needed).
+
+        For a PRE_DIAGNOSIS patient - no ticket taken yet, so there is no personal position to
+        report - this is the "how busy is it" check before they book (see AWAITING_CONSULT's
+        `peopleAhead` on `/status` for the personal-position equivalent once they have a ticket).
+        """
+        department = repo.get(Department, ARRIVAL_DEPARTMENT_ID)
+        if department is None:
+            raise HTTPException(status_code=500, detail="arrival department not seeded")
+
+        overview = consult_queue_overview(repo, department.id)
+        return QueueOverviewOut(
+            peopleWaiting=overview.people_waiting, etaMinutes=overview.eta_minutes
+        )
+
+    @router.get("/status/{patient_id}", response_model=PatientStatusOut)
+    def status(patient_id: str) -> PatientStatusOut:
+        """Which of the four situations the patient is in right now (read-only, no LLM call)."""
+        try:
+            pid = UUID(patient_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="invalid patient id") from exc
+
+        result = derive_patient_status(repo, pid)
+        return PatientStatusOut(
+            status=result.status.value,
+            queue=(
+                QueuePositionOut(
+                    label=result.queue.label,
+                    peopleAhead=result.queue.people_ahead,
+                    etaMinutes=result.queue.eta_minutes,
+                )
+                if result.queue is not None
+                else None
+            ),
+            planTasks=[
+                PlanTaskOut(
+                    taskId=str(task.task_id),
+                    serviceOrderId=str(task.service_order_id),
+                    sequenceIndex=task.sequence_index,
+                )
+                for task in result.plan_tasks
+            ],
+        )
+
+    @router.get("/tasks/{patient_id}", response_model=TaskListOut)
+    def tasks(patient_id: str) -> TaskListOut:
+        """Every task in the patient's Care Plan, each with its own status and queue position."""
+        try:
+            pid = UUID(patient_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="invalid patient id") from exc
+
+        details = list_patient_tasks(repo, pid)
+        return TaskListOut(
+            tasks=[
+                TaskStatusOut(
+                    taskId=str(detail.task_id),
+                    serviceOrderId=str(detail.service_order_id),
+                    serviceTypeCode=detail.service_type_code,
+                    serviceTypeLabel=detail.service_type_label,
+                    executionStatus=detail.execution_status.value,
+                    paymentStatus=detail.payment_status.value,
+                    sequenceIndex=detail.sequence_index,
+                    queue=(
+                        QueuePositionOut(
+                            label=detail.queue.label,
+                            peopleAhead=detail.queue.people_ahead,
+                            etaMinutes=detail.queue.eta_minutes,
+                        )
+                        if detail.queue is not None
+                        else None
+                    ),
+                )
+                for detail in details
+            ]
+        )
+
+    @router.get("/service-queue/{service_type_id}", response_model=ServiceQueueOut)
+    def service_queue(service_type_id: str) -> ServiceQueueOut:
+        """How many people are queued for one service type right now, and the time to clear it."""
+        try:
+            stid = UUID(service_type_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="invalid service type id") from exc
+        if repo.get(ServiceType, stid) is None:
+            raise HTTPException(status_code=404, detail="unknown service type")
+
+        overview = service_queue_overview(repo, stid)
+        return ServiceQueueOut(
+            serviceTypeId=str(stid),
+            peopleWaiting=overview.people_waiting,
+            etaMinutes=overview.eta_minutes,
+        )
+
+    @router.post("/suggest-task-order", response_model=TaskOrderOut)
+    def suggest_order(body: SuggestTaskOrderRequest) -> TaskOrderOut:
+        """Suggest an order for the patient's remaining services, grounded in live queue load.
+
+        Retrieves each remaining service's queue (in code), then the agent proposes an order the
+        patient can follow to wait the least; a deterministic shortest-wait-first order is the
+        fallback when no provider is configured or the model answers off-schema.
+        """
+        try:
+            pid = UUID(body.patientId)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="invalid patient id") from exc
+
+        # The queue info per task, keyed for enriching the agent's ordered result (which only
+        # carries task_id + reason) with the counts we retrieved.
+        info_by_task = {str(info.task_id): info for info in collect_service_queues(repo, pid)}
+        suggestion = suggest_task_order(repo, pid, task_order_llm)
+
+        ordered: list[OrderedServiceOut] = []
+        for entry in suggestion.order:
+            info = info_by_task.get(entry.task_id)
+            ordered.append(
+                OrderedServiceOut(
+                    taskId=entry.task_id,
+                    serviceTypeCode=info.service_type_code if info else entry.service_type_code,
+                    serviceTypeLabel=info.service_type_label if info else "",
+                    peopleWaiting=info.people_waiting if info else 0,
+                    etaMinutes=info.eta_minutes if info else 0,
+                    reason=entry.reason,
+                )
+            )
+        return TaskOrderOut(message=suggestion.message, order=ordered)
 
     return router

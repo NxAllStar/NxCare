@@ -12,6 +12,15 @@ from __future__ import annotations
 from .areas import DEFAULT_AREAS, AreaConfig
 from .cohort import PatientArrival, generate_cohort
 from .disruptions import DisruptionSpec, equipment_failure, room_failure
+from .evaluation import (
+    AbAggregate,
+    AbComparison,
+    compare_metrics,
+    evaluate_ab,
+    evaluate_ab_multi,
+    headline,
+    headline_aggregate,
+)
 from .harness import run_ab, run_policy
 from .metrics import Metrics, PatientRecord
 from .policies import FIFOPolicy, LoadAwarePolicy, SchedulingPolicy
@@ -27,6 +36,13 @@ __all__ = [
     "room_failure",
     "run_ab",
     "run_policy",
+    "AbAggregate",
+    "AbComparison",
+    "compare_metrics",
+    "evaluate_ab",
+    "evaluate_ab_multi",
+    "headline",
+    "headline_aggregate",
     "Metrics",
     "PatientRecord",
     "FIFOPolicy",

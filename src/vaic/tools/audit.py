@@ -10,6 +10,7 @@ from uuid import UUID
 
 from ..models import AuditLogEntry
 from ..state import Repository
+from .pii import redact_pii
 
 
 class AuditLog:
@@ -24,9 +25,13 @@ class AuditLog:
         target_id: UUID | None = None,
         patient_id: UUID | None = None,
     ) -> AuditLogEntry:
-        """Append one entry and return it. There is deliberately no way to edit a recorded entry."""
+        """Append one entry and return it. There is deliberately no way to edit a recorded entry.
+
+        `reasoning` is scrubbed of structured PII before it is stored (TASK-037, NFR-SEC-01): the
+        log is append-only, so redaction has to happen here, at write time.
+        """
         entry = AuditLogEntry(
-            actor=actor, action=action, reasoning=reasoning, target_id=target_id,
+            actor=actor, action=action, reasoning=redact_pii(reasoning), target_id=target_id,
             patient_id=patient_id,
         )
         return self._repo.save(entry)
