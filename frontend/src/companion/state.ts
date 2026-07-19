@@ -324,7 +324,6 @@ export interface CompanionActions {
   goProfile: () => void;
   goInsurance: () => void;
   finishOnboarding: () => void;
-  googleSignIn: () => void;
   obBack: () => void;
   setProfileHeight: (v: string) => void;
   setProfileWeight: (v: string) => void;
@@ -438,7 +437,6 @@ export function useCompanionState(startAtHome = false): { s: CompanionState; a: 
     goProfile: () => patch({ onboardStep: 'profile' }),
     goInsurance: () => patch({ onboardStep: 'insurance' }),
     finishOnboarding: () => patch({ appStage: 'main' }),
-    googleSignIn: () => patch({ onboardStep: 'profile' }),
     obBack: () => patch((prev) => {
       const order: OnboardStep[] = ['login', 'otp', 'profile', 'insurance'];
       const i = order.indexOf(prev.onboardStep);

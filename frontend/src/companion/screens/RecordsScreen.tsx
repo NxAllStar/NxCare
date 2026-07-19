@@ -6,7 +6,7 @@
  */
 import { MEDICATIONS, RESULTS, type ScreenProps } from '../state';
 
-const TEAL = '#0E7490';
+const TEAL = '#2563EB';
 const MUTED = '#5A626B';
 const BORDER = '#E2E5E8';
 
@@ -87,7 +87,7 @@ export function RecordsScreen({ s, a }: ScreenProps) {
           <div style={{ fontSize: 14, color: MUTED, marginTop: 4 }}>{currentResult.date}</div>
         </div>
         {showAiReasoning && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: 'rgba(14,116,144,.06)', borderRadius: 14, padding: 14 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: 'rgba(37,99,235,.06)', borderRadius: 14, padding: 14 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" fill={TEAL} /></svg>
             <span style={{ fontSize: 14, color: '#12151A', lineHeight: 1.5 }}>{currentResult.note} Đây là diễn giải chung, hãy hỏi bác sĩ để biết chi tiết.</span>
           </div>

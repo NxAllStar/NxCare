@@ -12,7 +12,7 @@ import {
   type ScreenProps,
 } from '../state';
 
-const TEAL = '#0E7490';
+const TEAL = '#2563EB';
 const MUTED = '#5A626B';
 
 export function AppointmentsScreen({ s, a }: ScreenProps) {

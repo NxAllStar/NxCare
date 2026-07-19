@@ -4,7 +4,7 @@
  */
 import { JOURNEY_STEPS, PATIENT_NAME, type ScreenProps } from '../state';
 
-const TEAL = '#0E7490';
+const TEAL = '#2563EB';
 const MUTED = '#5A626B';
 
 export function HomeScreen({ s, a }: ScreenProps) {
@@ -15,7 +15,7 @@ export function HomeScreen({ s, a }: ScreenProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'vaicFadeUp .25s ease' }}>
         <div style={{ fontSize: 22, fontWeight: 700 }}>Xin chào {PATIENT_NAME}</div>
 
-        <div style={{ background: TEAL, borderRadius: 22, padding: 20, color: '#fff', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 8px 24px rgba(14,116,144,.25)' }}>
+        <div style={{ background: TEAL, borderRadius: 22, padding: 20, color: '#fff', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 8px 24px rgba(37,99,235,.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '.04em' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" /></svg>
             Lịch khám sắp tới

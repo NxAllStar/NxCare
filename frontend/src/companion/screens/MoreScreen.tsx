@@ -47,27 +47,27 @@ export function MoreScreen({ s, a }: ScreenProps) {
           </div>
         )}
         {!s.billingPaid && (
-          <button onClick={a.payBill} style={{ height: 52, border: 'none', borderRadius: 999, background: '#0E7490', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>Thanh toán 200.000đ qua QR</button>
+          <button onClick={a.payBill} style={{ height: 52, border: 'none', borderRadius: 999, background: '#2563EB', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>Thanh toán 200.000đ qua QR</button>
         )}
       </div>
     );
   }
 
   if (s.moreScreen === 'family') {
-    const shareTrackColor = s.shareLocation ? '#0E7490' : '#C7CDD2';
+    const shareTrackColor = s.shareLocation ? '#2563EB' : '#C7CDD2';
     const shareThumbPos = s.shareLocation ? '23px' : '3px';
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'vaicFadeUp .25s ease' }}>
         {FAMILY.map((f) => {
-          const avatarColor = f.avatarTone === 'primary' ? '#0E7490' : '#5A626B';
+          const avatarColor = f.avatarTone === 'primary' ? '#2563EB' : '#5A626B';
           return (
             <button key={f.id} onClick={() => {}} style={{ textAlign: 'left', border: '1px solid #E2E5E8', borderRadius: 16, padding: 16, background: '#fff', cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
               <div style={{ width: 44, height: 44, borderRadius: 999, background: avatarColor, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{f.name.charAt(0)}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 16, fontWeight: 700 }}>{f.name}</div>
                 <div style={{ fontSize: 13, color: '#5A626B', marginTop: 2 }}>{f.rel}</div>
-                {f.status && <div style={{ fontSize: 13, color: '#0E7490', fontWeight: 600, marginTop: 4 }}>● {f.status}</div>}
+                {f.status && <div style={{ fontSize: 13, color: '#2563EB', fontWeight: 600, marginTop: 4 }}>● {f.status}</div>}
               </div>
             </button>
           );
@@ -87,9 +87,9 @@ export function MoreScreen({ s, a }: ScreenProps) {
   }
 
   // moreScreen === 'settings'
-  const largeTextTrackColor = s.largeText ? '#0E7490' : '#C7CDD2';
+  const largeTextTrackColor = s.largeText ? '#2563EB' : '#C7CDD2';
   const largeTextThumbPos = s.largeText ? '23px' : '3px';
-  const highContrastTrackColor = s.highContrast ? '#0E7490' : '#C7CDD2';
+  const highContrastTrackColor = s.highContrast ? '#2563EB' : '#C7CDD2';
   const highContrastThumbPos = s.highContrast ? '23px' : '3px';
 
   return (
