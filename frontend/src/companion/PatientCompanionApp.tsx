@@ -209,11 +209,11 @@ function ChatOverlay({ s, a }: { s: CompanionState; a: { closeChat: () => void; 
     <div style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 40, display: 'flex', flexDirection: 'column' }}>
       <div style={{ flexShrink: 0, padding: '56px 16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E5E8' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z" /></svg>
-          </div>
+          <span style={{ width: 34, height: 34, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }} aria-hidden="true">
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 800, color: '#fff' }}>NxC</span>
+          </span>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Trợ lý Đồng hành</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>Nx<span style={{ color: TEAL }}>Care</span> AI Assistant</div>
             <div style={{ fontSize: 12, color: '#2F9D66', fontWeight: 600 }}>● Đang hoạt động</div>
           </div>
         </div>
