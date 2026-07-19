@@ -62,6 +62,7 @@ from ..agents.careplan.routing import (
 from ..agents.careplan.sequencing import SequencedOrder
 from ..agents.careplan.slots import SlotCandidate, build_allocate_slot_tool
 from ..agents.core import ActionExecutor
+from ..agents.intake.patient_status import service_queue_overview
 from ..auth import Account, CrudOp, Role, resolve_scope
 from ..auth import Forbidden as AuthForbidden
 from ..auth.scope_async import matches_scope_async
@@ -169,6 +170,12 @@ class PatientTaskOut(BaseModel):
     sequenceIndex: int
     executionStatus: str
     paymentStatus: str
+    # Live queue load for this task's ServiceType right now (BR-09-adjacent, not itself the
+    # forecast tool): how many other tasks of the same test are queued, and how long clearing
+    # that queue takes (service_queue_overview, agents/intake/patient_status.py). This is what
+    # actually reaches the patient screen as "N people ahead, ~M minutes" - see JourneyScreen.tsx.
+    peopleWaiting: int
+    queueEtaMinutes: int
 
 
 class ActiveCarePlanResponse(BaseModel):
@@ -327,6 +334,7 @@ def build_careplan_router(repo: Repository, bus: CarePlanEventBus | None = None)
             assert service_type is not None
             slots = repo.list(Slot, task_id=task.id)
             slot = slots[0] if slots else None
+            queue = service_queue_overview(repo, service_type.id)
             task_out.append(
                 PatientTaskOut(
                     taskId=str(task.id),
@@ -338,6 +346,8 @@ def build_careplan_router(repo: Repository, bus: CarePlanEventBus | None = None)
                     sequenceIndex=task.sequence_index,
                     executionStatus=task.execution_status.value,
                     paymentStatus=task.payment_status.value,
+                    peopleWaiting=queue.people_waiting,
+                    queueEtaMinutes=queue.eta_minutes,
                 )
             )
 

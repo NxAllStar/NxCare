@@ -32,6 +32,8 @@ function toJourneySteps(tasks: careplanApi.PatientTaskOut[]): JourneyStep[] {
     status: step.status,
     room: step.room,
     directions: step.directions,
+    peopleWaiting: step.peopleWaiting,
+    queueEtaMinutes: step.queueEtaMinutes,
   }));
 }
 

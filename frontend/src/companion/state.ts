@@ -20,6 +20,10 @@ export interface JourneyStep {
   status: 'done' | 'active' | 'upcoming';
   room: string;
   directions?: string;
+  // Live queue load for this step's service (backend: service_queue_overview), when known -
+  // absent for the static design steps, which have no backend queue behind them.
+  peopleWaiting?: number;
+  queueEtaMinutes?: number;
 }
 
 export const JOURNEY_STEPS: JourneyStep[] = [

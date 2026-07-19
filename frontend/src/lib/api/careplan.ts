@@ -34,6 +34,9 @@ export interface PatientTaskOut {
   sequenceIndex: number;
   executionStatus: Task['executionStatus'];
   paymentStatus: Task['paymentStatus'];
+  // Live queue load for this task's service type (backend: service_queue_overview).
+  peopleWaiting: number;
+  queueEtaMinutes: number;
 }
 
 interface ActiveCarePlanResponse {
