@@ -36,7 +36,7 @@ holds `Active`. One owner per task; module ownership follows the routing table i
 | TASK-007 | Intake + slot recommendation + emergency escalation (FR-01, FR-02, BF-05) | intake-dev | TASK-004, TASK-005 | P1 | 2 | Done |
 | TASK-008 | Care Plan + proceed gate + slot allocation (FR-03, FR-04, FR-05, FR-08) | careplan-dev | TASK-004, TASK-006 | P1 | 2 | Done |
 | TASK-009 | Journey + notifications + patient-code scan + SMS (FR-06, FR-11, FR-15, FR-17) | Long | TASK-008 | P1 | 2 | Done |
-| TASK-010 | Coordinator + Disruption tiered autonomy (FR-09, FR-10) | agent-core-dev | TASK-004, TASK-005 | P1 | 2 | Planned |
+| TASK-010 | Coordinator + Disruption tiered autonomy (FR-09, FR-10) | agent-core-dev | TASK-004, TASK-005 | P1 | 2 | Done |
 | TASK-011 | Frontend: chat, timeline, coordinator dashboard (FR-12 + screens) - SUPERSEDED by TASK-021..024 (patient-only re-scope, 2026-07-18) | frontend-ui-dev | TASK-007, TASK-008 | P1 | 2 | Pending |
 | TASK-012 | A/B eval vs FIFO baseline + demo script + metrics | simulator-dev | TASK-010, TASK-011 | P2 | 3 | Planned |
 | TASK-013 | Auth + role-based access: login, session, server-side authz (FR-18) | agent-core-dev | TASK-003, TASK-004 | P1 | 2 | Done |

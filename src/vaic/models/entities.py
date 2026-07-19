@@ -164,7 +164,9 @@ class DisruptionEvent(_Base):
     event_type: DisruptionEventType
     status: DisruptionStatus = DisruptionStatus.DETECTED
     blast_radius: int = 0
+    resource_id: UUID | None = None  # the failed resource the re-plan routes around (FR-09)
     decided_by: UUID | None = None
+    created_at: datetime = Field(default_factory=_now)
 
 
 class Notification(_Base):
