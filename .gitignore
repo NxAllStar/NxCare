@@ -295,3 +295,4 @@ frontend/design
 Patient Companion App.html
 
 **/__pycache__/
+*.stackdump
