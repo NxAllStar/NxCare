@@ -145,7 +145,7 @@ export function LandingPage() {
 
           <div className="mt-4 flex w-full animate-fade-up flex-col items-center gap-4 sm:w-auto sm:flex-row">
             <a
-              href="/?home=1"
+              href="/onboarding"
               className="group inline-flex w-full flex-col items-center rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 sm:w-auto"
             >
               <span className="flex items-center gap-2 text-base">
@@ -274,7 +274,7 @@ export function LandingPage() {
               </ul>
             </div>
             <a
-              href="/?home=1"
+              href="/onboarding"
               className="mt-auto w-full rounded-xl bg-primary py-3.5 text-center font-bold text-primary-foreground shadow-sm shadow-primary/25 transition-all hover:brightness-95"
             >
               {c.launchBtn}

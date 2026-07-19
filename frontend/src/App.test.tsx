@@ -17,10 +17,11 @@ describe('App entry switch (TASK-026: path-based /console mount, patient app unt
     goTo('/');
   });
 
-  it('renders the patient companion app (onboarding) at "/"', () => {
+  it('renders the landing page at "/" and rewrites the URL bar to "/landing-page"', () => {
     goTo('/');
     render(<App />);
-    expect(screen.getByText(/Đăng nhập để theo dõi lịch khám/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Chuyển đổi trải nghiệm/ })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/landing-page');
   });
 
   it('the ?home=1 demo shortcut still opens the in-hospital live-companion home', () => {
@@ -43,7 +44,7 @@ describe('App entry switch (TASK-026: path-based /console mount, patient app unt
   });
 
   it('any non-/console path still renders the patient app entry, unaffected', () => {
-    goTo('/');
+    goTo('/onboarding');
     render(<App />);
     expect(screen.getByText(/Đăng nhập để theo dõi lịch khám/)).toBeInTheDocument();
   });

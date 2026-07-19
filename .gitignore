@@ -15,6 +15,11 @@ downloads/
 eggs/
 .eggs/
 lib/
+# The bare `lib/` rule above (Python venv/build artifacts) also matches
+# frontend/src/lib/ - un-ignore it so real frontend source keeps getting
+# tracked (see frontend/src/lib/api/client.ts, which this silently dropped
+# from every commit until now).
+!frontend/src/lib/
 lib64/
 parts/
 sdist/
