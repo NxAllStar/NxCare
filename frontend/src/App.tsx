@@ -21,9 +21,19 @@ import { LandingPage } from '@/pages/LandingPage';
  * URL bar via `history.replaceState` (no navigation, no reload) before
  * falling into the same landing check below, so the address bar reads
  * `/landing-page` rather than silently rendering landing content at "/".
+ *
+ * The one exception is `?home=1` (the demo shortcut below): the landing
+ * page's own CTAs link to `/?home=1`, so rewriting that to `/landing-page`
+ * here would strip the query en route and bounce the click straight back to
+ * the landing page instead of opening the companion app - the redirect only
+ * fires when `home` is absent.
  */
 function App() {
-  if (typeof window !== 'undefined' && window.location.pathname === '/') {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.pathname === '/' &&
+    !new URLSearchParams(window.location.search.replace(/%3D/gi, '=')).has('home')
+  ) {
     window.history.replaceState(null, '', '/landing-page' + window.location.search);
   }
 
