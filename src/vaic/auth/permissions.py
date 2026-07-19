@@ -8,6 +8,7 @@ Nothing here trusts the caller's role claim from outside; it is always the `Acco
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from ..models import (
     Appointment,
@@ -31,6 +32,9 @@ from .accounts import Account
 from .exceptions import Forbidden
 from .roles import Role
 from .scope import Scope, filter_by_scope
+
+if TYPE_CHECKING:
+    from ..state.sql.repository import AsyncPostgresRepository
 
 
 class CrudOp(StrEnum):
@@ -174,6 +178,16 @@ def list_scoped(
     """
     scope = resolve_scope(account, model_cls, op)
     return filter_by_scope(repo, account, repo.list(model_cls), scope)
+
+
+async def list_scoped_async(
+    repo: AsyncPostgresRepository, account: Account, model_cls: type, op: CrudOp = CrudOp.READ
+) -> list:
+    """Async twin of `list_scoped`, against `AsyncPostgresRepository` (the new routes' store)."""
+    from .scope_async import filter_by_scope_async  # local: avoids a cycle with scope_async
+
+    scope = resolve_scope(account, model_cls, op)
+    return await filter_by_scope_async(repo, account, await repo.list(model_cls), scope)
 
 
 # ---- named-action role guards (docs/specs/06 "Action permissions" table) ------------------------

@@ -6,7 +6,7 @@
  * src/components/primitives/StatusChip.tsx and BR-31.
  */
 const vi = {
-  'app.name': 'VAIC',
+  'app.name': 'NxCare',
   'app.tagline': 'Đồng hành cùng hành trình khám chữa bệnh của bạn',
 
   'nav.home': 'Trang chủ',

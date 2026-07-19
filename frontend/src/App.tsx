@@ -15,8 +15,18 @@ import { LandingPage } from '@/pages/LandingPage';
  * src/companion/ - exactly as before this task. The earlier routed patient
  * app (src/routes, src/pages) remains in the tree but is no longer the
  * entry; this matches the owner's request to clone the design exactly.
+ *
+ * Root ("/") is the public entry point and always lands on `/landing-page`
+ * first (owner decision 2026-07-19): visiting the bare origin rewrites the
+ * URL bar via `history.replaceState` (no navigation, no reload) before
+ * falling into the same landing check below, so the address bar reads
+ * `/landing-page` rather than silently rendering landing content at "/".
  */
 function App() {
+  if (typeof window !== 'undefined' && window.location.pathname === '/') {
+    window.history.replaceState(null, '', '/landing-page' + window.location.search);
+  }
+
   const isLanding =
     typeof window !== 'undefined' &&
     (window.location.pathname === '/landing' || window.location.pathname === '/landing-page');

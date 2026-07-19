@@ -1,8 +1,11 @@
 """FastAPI entry point (tech-stack.md "Serving: FastAPI").
 
 `create_app` builds one process-wide demo `Repository`, seeds it (`demo_state.py`), and mounts the
-intake router. CORS is opened only to the configured frontend origin(s) - never `*` with
-credentials (security-privacy.md "Permissive CORS").
+sync/demo routers (intake, careplan, patient) alongside the native-async, `AsyncPostgresRepository`
++ FR-18-authenticated routers (auth, appointments, careplan, journey, notifications, patient,
+forecast, disruption, dashboard, staff) - see the API design plan (docs/tasks) for why both layers
+coexist rather than one replacing the other. CORS is opened only to the configured frontend
+origin(s) - never `*` with credentials (security-privacy.md "Permissive CORS").
 """
 
 from __future__ import annotations
@@ -15,7 +18,21 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from ..models import AuditLogEntry, Diagnosis, ScanEvent, ServiceOrder, ServiceType, Slot
+from . import (
+    appointment_routes,
+    auth_routes,
+    careplan_routes,
+    dashboard_routes,
+    disruption_routes,
+    forecast_routes,
+    journey_routes,
+    notifications_routes,
+    patient_routes,
+    staff_routes,
+)
 from .careplan_routes import build_careplan_router
+from .crud import build_entity_router
 from .demo_state import (
     build_repository,
     seed_demo_careplan_stations,
@@ -52,7 +69,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["*"],
     )
 
@@ -66,6 +83,27 @@ def create_app() -> FastAPI:
     app.include_router(build_intake_router(repo))
     app.include_router(build_careplan_router(repo, bus))
     app.include_router(build_patient_router(repo))
+
+    # Native-async routers (AsyncPostgresRepository) and sync-adapter-bridged routers (existing
+    # agents/* business logic) - see the API design plan (docs/tasks) for the async/sync split.
+    app.include_router(auth_routes.router)
+    app.include_router(patient_routes.router)
+    app.include_router(appointment_routes.router)
+    app.include_router(careplan_routes.router)
+    app.include_router(journey_routes.router)
+    app.include_router(notifications_routes.router)
+    app.include_router(forecast_routes.router)
+    app.include_router(disruption_routes.router)
+    app.include_router(dashboard_routes.router)
+    app.include_router(staff_routes.router)
+
+    # Reference/log entities with no special business rule (DRY: one factory, see api/crud.py).
+    app.include_router(build_entity_router(ServiceType, "/service-types", ["service-types"]))
+    app.include_router(build_entity_router(Slot, "/slots-log", ["slots"]))
+    app.include_router(build_entity_router(Diagnosis, "/diagnoses-log", ["diagnoses"]))
+    app.include_router(build_entity_router(ServiceOrder, "/service-orders", ["service-orders"]))
+    app.include_router(build_entity_router(ScanEvent, "/scan-events", ["scan-events"]))
+    app.include_router(build_entity_router(AuditLogEntry, "/audit-log", ["audit-log"]))
 
     @app.get("/health")
     def health() -> dict[str, str]:

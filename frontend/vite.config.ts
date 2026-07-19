@@ -10,4 +10,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    allowedHosts: ['nxcare-alb-685848636.us-east-1.elb.amazonaws.com'],
+  },
 })

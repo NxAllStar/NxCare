@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from .accounts import Account, AccountDirectory
 from .exceptions import Unauthorized
 from .permissions import authorize as _authorize
@@ -21,6 +23,17 @@ class AuthService:
         account = self._accounts.get_by_username(username)
         if account is None:
             raise Unauthorized(f"unknown account: {username}")
+        return self._sessions.create(account)
+
+    def login_by_patient_id(self, patient_id: UUID) -> Session:
+        """Patient-facing login: the caller resolves a `patient_code` to a `patient_id` (a real
+        `Patient` row lookup, not a client-side table) and this looks up the account linked to it -
+        same demo posture as `login` (no password), just keyed by `patient_id` instead of
+        `username` so the patient-facing login screen never needs to know internal usernames.
+        """
+        account = self._accounts.get_by_patient_id(patient_id)
+        if account is None:
+            raise Unauthorized(f"no account linked to patient {patient_id}")
         return self._sessions.create(account)
 
     def logout(self, token: str) -> None:

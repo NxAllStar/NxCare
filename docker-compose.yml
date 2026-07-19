@@ -1,32 +1,8 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: nxcare_postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_NAME:-nxcare}
-      POSTGRES_USER: ${POSTGRES_USER:-nxcare}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - nxcare_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nxcare} -d ${POSTGRES_NAME:-nxcare}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:7-alpine
-    container_name: nxcare_redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
+  # Postgres (and Redis, if configured) is hosted externally (not part of this compose file) -
+  # nxcare_be reads real host/port/credentials from .env (copied from .env.example, never
+  # committed). VAIC_STATE_BACKEND defaults to `memory` (api/demo_state.py, api/deps.py) - only
+  # set it to `redis` here once VAIC_REDIS_URL/REDIS_URL is actually present in .env.
   nxcare_be:
     build:
       context: .
@@ -35,33 +11,23 @@ services:
     env_file:
       - .env
     environment:
-      VAIC_STATE_BACKEND: redis
-      VAIC_REDIS_URL: redis://redis:6379/0
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_NAME: ${POSTGRES_NAME:-nxcare}
-      POSTGRES_USER: ${POSTGRES_USER:-nxcare}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      VAIC_CORS_ORIGINS: ${VAIC_CORS_ORIGINS:-http://localhost:5173}
+      # "localhost" here means whatever machine the BROWSER runs on, not this host - a browser
+      # reaching this stack via a LAN/tunnel address (e.g. http://10.0.64.77:5175) needs that same
+      # address in both of these, not localhost, or every request is silently sent to the
+      # browser's own machine instead of here. Override via .env or `FRONTEND_ORIGIN=... docker
+      # compose up` when accessing this stack from anywhere other than the host's own localhost.
+      VAIC_CORS_ORIGINS: ${FRONTEND_ORIGIN:-http://localhost:5175}
     ports:
       - "${API_PORT:-8000}:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   nxcare_fe:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_API_BASE_URL: ${BACKEND_ORIGIN:-http://localhost:8000}
     container_name: nxcare_fe
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT:-5175}:80"
     depends_on:
       - nxcare_be
-
-volumes:
-  nxcare_postgres_data:

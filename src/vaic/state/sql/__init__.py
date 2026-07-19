@@ -8,5 +8,6 @@ from __future__ import annotations
 
 from .models import Base
 from .repository import AsyncPostgresRepository
+from .sync_adapter import PostgresRepositorySyncAdapter
 
-__all__ = ["AsyncPostgresRepository", "Base"]
+__all__ = ["AsyncPostgresRepository", "Base", "PostgresRepositorySyncAdapter"]
