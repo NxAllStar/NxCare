@@ -2,8 +2,21 @@
  * JourneyScreen - patient journey timeline and per-step detail. Transcribed
  * 1:1 from the design's isJourneyTimeline / isJourneyStep blocks.
  */
-import { JOURNEY_STEPS, type ScreenProps } from '../state';
+import { JOURNEY_STEPS, type JourneyStep, type ScreenProps } from '../state';
 import { useLiveJourney } from '../useLiveJourney';
+
+// Live queue wait when the backend supplied it (`peopleWaiting`/`queueEtaMinutes`, from
+// service_queue_overview); the static design steps have neither field, so this falls back to
+// the design's original copy rather than showing a wrong or missing number.
+function waitText(step: JourneyStep): string {
+  if (step.peopleWaiting === undefined || step.queueEtaMinutes === undefined) {
+    return 'Phía trước còn 2 người · chờ khoảng 8–10 phút.';
+  }
+  if (step.peopleWaiting === 0) {
+    return 'Không có ai phía trước, sắp đến lượt bạn.';
+  }
+  return `Phía trước còn ${step.peopleWaiting} người · chờ khoảng ${step.queueEtaMinutes} phút.`;
+}
 
 export function JourneyScreen({ s, a }: ScreenProps) {
   // Live backend plan (TASK-038) when a doctor has signed orders for this patient; otherwise the
@@ -19,6 +32,7 @@ export function JourneyScreen({ s, a }: ScreenProps) {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase' }}>Đang diễn ra</div>
           <div style={{ fontSize: 20, fontWeight: 800, marginTop: 4 }}>{activeStep.label}</div>
           <div style={{ fontSize: 14, color: '#5A626B', marginTop: 2 }}>{activeStep.room} · dự kiến {activeStep.time}</div>
+          <div style={{ fontSize: 13, color: '#5A626B', marginTop: 6 }}>{waitText(activeStep)}</div>
         </div>
 
         <button onClick={a.toggleWhy} style={{ alignSelf: 'flex-start', height: 38, padding: '0 14px', borderRadius: 999, border: '1px solid #E2E5E8', background: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Vì sao thứ tự này?</button>
@@ -73,7 +87,7 @@ export function JourneyScreen({ s, a }: ScreenProps) {
           <div style={{ fontSize: 15, lineHeight: 1.6 }}>{currentStepDetail.directions}</div>
         </div>
       )}
-      <div style={{ fontSize: 14, color: '#5A626B', background: 'rgba(37,99,235,.06)', borderRadius: 14, padding: 14, lineHeight: 1.5 }}>Phía trước còn 2 người · chờ khoảng 8–10 phút.</div>
+      <div style={{ fontSize: 14, color: '#5A626B', background: 'rgba(37,99,235,.06)', borderRadius: 14, padding: 14, lineHeight: 1.5 }}>{waitText(currentStepDetail)}</div>
     </div>
   );
 }

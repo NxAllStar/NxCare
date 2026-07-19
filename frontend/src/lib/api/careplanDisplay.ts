@@ -21,6 +21,11 @@ export interface CarePlanTaskInput {
   // so any backend execution status (LOCKED/PENDING/IN_PROGRESS/DONE/CANCELLED) is accepted; only
   // DONE and IN_PROGRESS change the mapped step status, everything else is treated as upcoming.
   executionStatus?: string;
+  // `/active` supplies live queue load for this task's service type (backend:
+  // service_queue_overview); `/generate`'s freshly proposed route does not have a queue yet, so
+  // both are optional and absence is treated as "no queue data" by the caller.
+  peopleWaiting?: number;
+  queueEtaMinutes?: number;
 }
 
 export interface CarePlanDisplayStep {
@@ -31,6 +36,8 @@ export interface CarePlanDisplayStep {
   time: string;
   durationMin: number;
   status: 'done' | 'active' | 'upcoming';
+  peopleWaiting?: number;
+  queueEtaMinutes?: number;
 }
 
 const SERVICE_ROOMS: Record<string, string> = {
@@ -102,6 +109,8 @@ export function toCarePlanSteps(tasks: CarePlanTaskInput[]): CarePlanDisplayStep
       time: formatMinutes(stepStart, status !== 'done'),
       durationMin: task.durationMin,
       status,
+      peopleWaiting: task.peopleWaiting,
+      queueEtaMinutes: task.queueEtaMinutes,
     };
   });
   if (steps.length > 0 && !steps.some((step) => step.status === 'active')) {
