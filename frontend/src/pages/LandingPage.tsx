@@ -101,16 +101,34 @@ export function LandingPage() {
     // (#2563EB) - the landing brands like the hospital website, not like the
     // teal patient app (index.css scoped token override).
     <div className="console-surface relative min-h-screen overflow-x-hidden bg-background font-sans text-foreground">
-      {/* Ambient background wash - calm clinical, same treatment as the staff login */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(70rem 45rem at 15% -10%, hsl(var(--primary) / 0.08), transparent 60%),' +
-            'radial-gradient(55rem 40rem at 110% 25%, hsl(var(--primary) / 0.06), transparent 55%)',
-        }}
-      />
+      {/* Ambient background - calm clinical: radial washes, a faint blueprint
+          grid fading out of the hero, and slow-drifting glow blobs. All
+          token-based; the drift is transform-only and disabled under
+          prefers-reduced-motion (index.css). */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(70rem 45rem at 15% -10%, hsl(var(--primary) / 0.08), transparent 60%),' +
+              'radial-gradient(55rem 40rem at 110% 25%, hsl(var(--primary) / 0.06), transparent 55%)',
+          }}
+        />
+        <div
+          className="absolute inset-x-0 top-0 h-[42rem]"
+          style={{
+            backgroundImage:
+              'linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),' +
+              'linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px)',
+            backgroundSize: '3.5rem 3.5rem',
+            maskImage: 'radial-gradient(ellipse 80% 90% at 50% 0%, black 30%, transparent 78%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 80% 90% at 50% 0%, black 30%, transparent 78%)',
+          }}
+        />
+        <div className="animate-float-a absolute -top-24 right-[-8%] h-[26rem] w-[26rem] rounded-full bg-primary/10 blur-3xl" />
+        <div className="animate-float-b absolute left-[-10%] top-[38rem] h-[30rem] w-[30rem] rounded-full bg-primary/5 blur-3xl" />
+        <div className="animate-float-a absolute bottom-40 right-[-6%] h-[24rem] w-[24rem] rounded-full bg-success/10 blur-3xl" />
+      </div>
 
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                              */}
