@@ -3,6 +3,13 @@ import { useI18n } from '@/i18n';
 import { Avatar, Button, Card, StatusChip, PatientCodeQr, useToast, Toast } from '@/components/primitives';
 import { clinicalStore, type ClinicalPatient } from '../dashboard/clinicalStore';
 import { CheckIcon, PlusIcon, XIcon, QrIcon } from '@/components/icons';
+import * as careplanApi from '@/lib/api/careplan';
+import { toCarePlanSteps, type CarePlanDisplayStep } from '@/lib/api/careplanDisplay';
+
+// Fixed synthetic demo doctor id for the `diagnosed_by` field (no server-side authz here yet -
+// FR-18 binds this to a real session in a separate task; matches the trusted-actor posture of
+// `/api/careplan/generate`). Never a real person.
+const DEMO_DOCTOR_ID = '11111111-1111-1111-1111-111111111111';
 
 const SERVICE_CATALOG = [
   'Xét nghiệm máu',
@@ -26,6 +33,9 @@ export function ConsultOrdersScreen() {
   const [showScanSimulator, setShowScanSimulator] = useState(false);
   const [scannedCode, setScannedCode] = useState('');
   const [localSigned, setLocalSigned] = useState(false);
+  // The real backend care-plan route (TASK-038) - the SAME data the patient app renders, mapped the
+  // SAME way (shared toCarePlanSteps), so the doctor's preview and the patient's journey match.
+  const [carePlanSteps, setCarePlanSteps] = useState<CarePlanDisplayStep[] | null>(null);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
@@ -52,6 +62,29 @@ export function ConsultOrdersScreen() {
     }
   }, [selectedPatientId]);
 
+  // Load this patient's real backend care plan (if any) so the timeline reflects what was actually
+  // generated - the same plan the patient app reads via /active - instead of static placeholder data.
+  useEffect(() => {
+    if (!selectedPatient) {
+      setCarePlanSteps(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { patientId } = await careplanApi.resolvePatient(selectedPatient.patientCode);
+        const view = await careplanApi.fetchActiveCarePlan(patientId);
+        if (cancelled) return;
+        setCarePlanSteps(view?.rawTasks?.length ? toCarePlanSteps(view.rawTasks) : null);
+      } catch {
+        if (!cancelled) setCarePlanSteps(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPatientId]);
+
   const handleAddService = () => {
     if (selectedService && !orderedServices.includes(selectedService)) {
       setOrderedServices([...orderedServices, selectedService]);
@@ -63,18 +96,42 @@ export function ConsultOrdersScreen() {
     setOrderedServices(orderedServices.filter((s) => s !== service));
   };
 
-  const handleSignOrders = () => {
-    if (!selectedPatientId) return;
+  const handleSignOrders = async () => {
+    if (!selectedPatientId || !selectedPatient) return;
     if (!diagnosisInput.trim()) {
       showToast('Chẩn đoán lâm sàng không được để trống');
       return;
     }
 
     const diagnoses = diagnosisInput.split(',').map((d) => d.trim()).filter(Boolean);
+
+    // Local console UX first (unchanged): reflect the sign-off in this screen's own store.
     clinicalStore.signAndFinaliseOrders(selectedPatientId, diagnoses, orderedServices);
     setLocalSigned(true);
 
-    showToast(`Đã ký và chốt chỉ định cho ${selectedPatient?.name}`);
+    // Then push the order to the real backend so the patient's Journey screen updates live
+    // (TASK-038). Resolve the patient's canonical id by patient_code - the same id the patient app
+    // reads under - then generate the care plan. A backend failure does not undo the local sign-off;
+    // it just tells the doctor the live push did not land.
+    if (orderedServices.length === 0) {
+      showToast(`Đã ký chẩn đoán cho ${selectedPatient.name} (chưa có chỉ định để gửi)`);
+      return;
+    }
+    try {
+      const resolved = await careplanApi.resolvePatient(selectedPatient.patientCode);
+      const result = await careplanApi.generateCarePlan({
+        patientId: resolved.patientId,
+        appointmentId: resolved.appointmentId,
+        diagnosedBy: DEMO_DOCTOR_ID,
+        conditions: diagnoses,
+        serviceTypeNames: orderedServices,
+      });
+      // Show the SAME route the backend just generated (and the patient app will read).
+      setCarePlanSteps(toCarePlanSteps(result.route));
+      showToast(`Đã ký và gửi chỉ định cho ${selectedPatient.name}`);
+    } catch {
+      showToast(`Đã ký cục bộ, nhưng gửi chỉ định lên hệ thống thất bại cho ${selectedPatient.name}`);
+    }
   };
 
   const handleSimulateScan = (e: React.FormEvent) => {
@@ -94,12 +151,7 @@ export function ConsultOrdersScreen() {
     setShowScanSimulator(false);
   };
 
-  const carePlanTasks = [
-    { label: 'Lấy máu — Phòng xét nghiệm 2', owner: 'KTV Bình', duration: '15 phút', done: true, color: 'bg-success' },
-    { label: 'Siêu âm bụng — Phòng Siêu âm 1', owner: 'KTV Hạnh', duration: '20 phút', done: false, color: 'bg-warning' },
-    { label: 'X-quang ngực — Phòng X-quang 1 (đổi từ máy #2)', owner: 'KTV Long', duration: '10 phút', done: false, color: 'bg-primary' },
-    { label: 'Quay lại bác sĩ đọc kết quả — P.302', owner: 'BS. Lê Văn Minh', duration: '—', done: false, color: 'bg-muted-foreground/30' },
-  ];
+  const hasCarePlan = !!carePlanSteps && carePlanSteps.length > 0;
 
   return (
     <div className="flex h-full flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -305,7 +357,7 @@ export function ConsultOrdersScreen() {
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={handleSignOrders}
+                    onClick={() => void handleSignOrders()}
                     className="w-full text-sm font-bold py-2.5 shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25"
                   >
                     <CheckIcon className="mr-2 h-4 w-4" />
@@ -319,25 +371,35 @@ export function ConsultOrdersScreen() {
                 <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
                   Lộ trình chăm sóc của bệnh nhân
                 </div>
-                {!localSigned ? (
+                {!hasCarePlan ? (
                   <Card className="p-6 border-dashed border-2 border-border text-center text-sm text-muted-foreground flex items-center justify-center min-h-48">
                     Chưa có lộ trình — ký chỉ định để kích hoạt Trợ lý kế hoạch tự sinh chuỗi.
                   </Card>
                 ) : (
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2.5 bg-card border border-border rounded-2xl shadow-sm p-4">
-                      {carePlanTasks.map((t, idx) => (
-                        <div key={idx} className="flex gap-3 text-sm items-start">
+                      {carePlanSteps.map((step, idx) => (
+                        <div key={step.id} className="flex gap-3 text-sm items-start">
                           <div className="flex flex-col items-center flex-shrink-0 mt-1">
-                            <span className={`w-2.5 h-2.5 rounded-full ${t.color}`}></span>
-                            {idx < carePlanTasks.length - 1 && (
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full ${
+                                step.status === 'done'
+                                  ? 'bg-success'
+                                  : step.status === 'active'
+                                    ? 'bg-primary'
+                                    : 'bg-muted-foreground/30'
+                              }`}
+                            ></span>
+                            {idx < carePlanSteps.length - 1 && (
                               <span className="w-0.5 bg-border h-10 my-0.5"></span>
                             )}
                           </div>
                           <div>
-                            <div className="font-bold text-foreground">{t.label}</div>
+                            <div className="font-bold text-foreground">
+                              {step.serviceLabel} — {step.room}
+                            </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              {t.owner} · {t.duration}
+                              {step.time} · {step.durationMin} phút
                             </div>
                           </div>
                         </div>

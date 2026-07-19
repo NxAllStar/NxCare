@@ -1,0 +1,85 @@
+---
+title: "TASK-038: Wire the patient app to the real Care Plan backend"
+status: Pending
+fr: FR-04
+owner: frontend-ui-dev
+deps: TASK-027, TASK-013
+priority: P1
+phase: 2
+created: 2026-07-18
+tags: [task]
+---
+
+<!-- Task files are written 100% in English (see .claude/rules/task-tracking.md). -->
+
+# TASK-038: Wire the patient app to the real Care Plan backend
+
+A status change is written in BOTH places at once: the `status:` field above, and this task's row
+in `docs/tasks/master-plan.md`. They must never disagree. Read the board row back after writing it:
+a board write can fail silently while the task file lands.
+
+## Goal
+
+Make `JourneyPage` read a patient's care plan from the real `/api/careplan/*` backend instead of
+the static `DEMO_CARE_PLANS`/`DEMO_TASKS` fixtures, so a doctor-entered order is visible on the
+patient screen without a manual fixture edit.
+
+## Inputs and context
+
+- Related FR: [FR-04](../../specs/05-functional-requirements.md#fr-04), [FR-03](../../specs/05-functional-requirements.md#fr-03)
+- Related PRD: [PRD-FR-12](../../requirements/PRD-FR-12-patient-mobile-app.md)
+- Related files and modules: `frontend/src/lib/api/patient.ts`, `frontend/src/lib/api/fixtures.ts`,
+  `frontend/src/pages/LoginPage.tsx`, `frontend/src/auth/AuthContext.tsx`,
+  `src/vaic/api/careplan_routes.py` (`GET /patient/{patient_id}/active`, added this session)
+
+## Decisions and blockers
+
+- Blocker (found this session, 2026-07-18): demo patient login issues session patient ids as
+  fixed demo strings (`"patient-0001"`, `"patient-0002"`, `fixtures.ts`), but every backend model
+  and route (`careplan_routes.py`, `models/entities.py`) types `patient_id` as a real `UUID`.
+  Calling `GET /api/careplan/patient/patient-0001/active` 422s outright - FastAPI cannot parse the
+  path param. `getActiveCarePlan`/`listTasksForCarePlan` cannot simply be repointed at the real
+  endpoint until patient identity is reconciled: either the demo login mints/looks up a real
+  `Patient` UUID (needs a matching backend `Patient` read/seed path, which does not exist yet
+  either - only `Appointment`/`ServiceType`/`Resource` are seeded), or the FE keeps a
+  demo-string-to-UUID lookup table. Needs an owner decision before FE code changes, not a
+  unilateral pick - this crosses `frontend-ui-dev` and `agent-core-dev` (FR-18 auth) territory.
+- A runnable, backend-only demo of the doctor-order -> route-proposal flow already exists
+  (`scripts/demo_careplan_flow.py`, added this session) and does not depend on this task landing.
+
+## To do
+
+- [ ] Decide the patient-identity reconciliation approach (see blocker above) with the auth/backend
+      owner before touching `patient.ts`.
+- [ ] Repoint `getActiveCarePlan`/`listTasksForCarePlan` at `GET /api/careplan/patient/{id}/active`
+      (same pattern as `frontend/src/lib/api/intake.ts`'s real backend call).
+- [ ] Add a `POST /api/careplan/generate`-calling doctor order-entry surface - scope decision needed
+      first: PRD-FR-12 3 "Out of scope" and `routeConfig.tsx`'s docstring currently lock this
+      frontend to patient-only screens (TASK-011 was superseded for exactly that reason), so a
+      doctor screen inside this app is a product-scope change, not a routine addition. Confirm
+      placement (a `role_doctor`-gated route in this same app, vs. a separate staff surface, vs.
+      demo-only via `scripts/demo_careplan_flow.py` / curl) with the product owner before building.
+- [ ] Update `JourneyPage.test.tsx` and any other test mocking `patientApi` if the return shape
+      changes.
+
+## Acceptance criteria
+
+- [ ] Given a `CarePlan` created via `POST /api/careplan/generate` for a real patient UUID, when
+      that patient's `JourneyPage` loads, then the timeline shows the same tasks the backend
+      returned - no fixture data involved.
+- [ ] Given no active care plan exists for the patient, when `JourneyPage` loads, then it shows the
+      existing empty state (same UX as today, backed by a real 404 instead of a fixture miss).
+
+## Session log
+
+| Date | Who | What was done | Result |
+|------|-----|---------------|--------|
+| 2026-07-18 | claude (session) | Added `GET /api/careplan/patient/{patient_id}/active` (careplan_routes.py) + tests; added standalone `scripts/demo_careplan_flow.py` proving the doctor-order -> route-proposal flow end to end; discovered the patient-id UUID/demo-string mismatch blocking FE wiring and filed this task instead of forcing a unilateral fix | Backend read endpoint done (182/182 tests pass); FE wiring intentionally left for a scoped decision |
+| 2026-07-19 | claude (session) | Owner decisions taken: real-time via SSE push; identity via backend mint/lookup; doctor "website" is the existing staff console (built on `origin/frontend`). Phase 1 backend seam implemented: `POST /api/patients/resolve` (mint-or-lookup Patient by patient_code + ensure demo Appointment); `CarePlanEventBus` (in-process pub/sub, threadsafe via loop.call_soon_threadsafe) in `api/events.py`; SSE `GET /api/careplan/patient/{id}/stream`; `/generate` publishes `careplan.updated` keyed to patient_id; `demo_state.py` seeds Patients/Appointments + a ServiceType catalog matching the console's Vietnamese labels; `app.py` wires bus via lifespan + mounts patient router. Added tests (test_events, test_patient_routes, test_careplan_events). Live end-to-end verified with uvicorn+curl: resolve -> generate -> SSE pushed `careplan.updated` -> /active shows tasks. | Phase 1 done: 198/198 pytest pass, ruff clean (1 pre-existing E501 in intake_routes:12, untouched). Committed on `feat/careplan-routing` (cab09da). |
+| 2026-07-19 | claude (session) | Re-scope correction: the real patient-facing entry is `PatientCompanionApp` (`src/companion/`, 1:1 design clone, phone/OTP), NOT the routed `src/pages` app (no longer mounted per `App.tsx`). Wired the live seam into the companion instead: `useLiveJourney` resolves the design's patient (BN-941207) and renders the backend plan over SSE, falling back to the static design steps when no plan. Unified doctor+patient views: `generateCarePlan` now returns the route, and BOTH the console care-plan panel (`ConsultOrdersScreen`, replacing hardcoded `carePlanTasks`) and the companion journey map it through one shared builder `lib/api/careplanDisplay.toCarePlanSteps` (room per serviceTypeCode, ordering, active-step marker, staggered demo times). Commits 26d9e15, fc52360, 0bddc0f, 3764b70. | Doctor console preview and patient journey now show the SAME plan mapped identically; rooms are per-service, times staggered. Frontend 267/267 pass, tsc clean. Live-verified on ports 8100/5199. |
+| 2026-07-19 | claude (session) | Created integration branch `feat/wire-console-patient` (merged `origin/frontend` cleanly - console was net-new). Phase 2 (patient app): new `lib/api/careplan.ts` backend client (resolvePatient, fetchActiveCarePlan, openCarePlanStream/SSE, generateCarePlan); `JourneyPage` now reads the active plan from the backend and refetches on each SSE `careplan.updated` (404 -> existing empty state); added the 3 console personas as patient-app demo accounts (fixtures + session) so a patient logs in under the SAME patient_code the doctor signs orders for; `JourneyPage.test` rewired to mock the new client off the same fixtures. Phase 3 (console): `ConsultOrdersScreen.handleSignOrders` resolves the patient and POSTs `/api/careplan/generate`, keeping the local store update for console UX. Verified full 2-way flow live (uvicorn+curl): patient resolves BN-941207 -> /active 404 -> opens SSE -> console signs orders (Vietnamese test names) -> SSE pushes `careplan.updated` -> patient /active shows the two tasks. | Phase 2+3 done, committed (f73d0b8 merge, 9e4e56f). Frontend 267/267 vitest pass, tsc clean, vite build clean. Backend 198/198. Acceptance criteria met. Remaining before Done: review gate + PR + merge (this branch has both surfaces; note the pre-existing duplicate task rows in master-plan are unrelated). |
+
+## Result
+
+<Filled when the task moves to Done: what was delivered, the PR or commit, and any
+follow-up items with where they now live. Then move this file to docs/tasks/done/.>

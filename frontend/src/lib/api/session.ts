@@ -29,6 +29,10 @@ interface DemoCredential {
 const DEMO_CREDENTIALS: DemoCredential[] = [
   { patientCode: 'BN-000123', password: 'demo1234' },
   { patientCode: 'BN-000456', password: 'demo1234' },
+  // Cross-surface demo personas (TASK-038) - same patient_codes the staff console signs orders for.
+  { patientCode: 'BN-941207', password: 'demo1234' },
+  { patientCode: 'BN-880214', password: 'demo1234' },
+  { patientCode: 'BN-921105', password: 'demo1234' },
 ];
 
 export class InvalidCredentialsError extends Error {

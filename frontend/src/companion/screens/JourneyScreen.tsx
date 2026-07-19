@@ -3,9 +3,14 @@
  * 1:1 from the design's isJourneyTimeline / isJourneyStep blocks.
  */
 import { JOURNEY_STEPS, type ScreenProps } from '../state';
+import { useLiveJourney } from '../useLiveJourney';
 
 export function JourneyScreen({ s, a }: ScreenProps) {
-  const activeStep = JOURNEY_STEPS.find((j) => j.status === 'active') ?? JOURNEY_STEPS[0];
+  // Live backend plan (TASK-038) when a doctor has signed orders for this patient; otherwise the
+  // design's static steps, so the clone renders unchanged until a real order exists.
+  const { steps: liveSteps } = useLiveJourney();
+  const steps = liveSteps ?? JOURNEY_STEPS;
+  const activeStep = steps.find((j) => j.status === 'active') ?? steps[0];
 
   if (s.journeyScreen === 'timeline') {
     return (
@@ -22,7 +27,7 @@ export function JourneyScreen({ s, a }: ScreenProps) {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {JOURNEY_STEPS.map((js) => (
+          {steps.map((js) => (
             <button key={js.id} onClick={() => a.openStep(js.id)} style={{ textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', gap: 14, padding: '10px 0' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
                 {js.status === 'done' && (
@@ -51,7 +56,7 @@ export function JourneyScreen({ s, a }: ScreenProps) {
   }
 
   // journeyScreen === 'step'
-  const currentStepDetail = JOURNEY_STEPS.find((j) => j.id === s.journeyStepId) ?? activeStep;
+  const currentStepDetail = steps.find((j) => j.id === s.journeyStepId) ?? activeStep;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'vaicFadeUp .25s ease' }}>
@@ -62,10 +67,12 @@ export function JourneyScreen({ s, a }: ScreenProps) {
         <div style={{ fontSize: 20, fontWeight: 800 }}>{currentStepDetail.label}</div>
         <div style={{ fontSize: 15, color: '#5A626B', marginTop: 4 }}>{currentStepDetail.room} · dự kiến {currentStepDetail.time}</div>
       </div>
-      <div style={{ border: '1px solid #E2E5E8', borderRadius: 16, padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#9BA3AB', textTransform: 'uppercase', marginBottom: 8 }}>Chỉ đường</div>
-        <div style={{ fontSize: 15, lineHeight: 1.6 }}>{currentStepDetail.directions}</div>
-      </div>
+      {currentStepDetail.directions && (
+        <div style={{ border: '1px solid #E2E5E8', borderRadius: 16, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#9BA3AB', textTransform: 'uppercase', marginBottom: 8 }}>Chỉ đường</div>
+          <div style={{ fontSize: 15, lineHeight: 1.6 }}>{currentStepDetail.directions}</div>
+        </div>
+      )}
       <div style={{ fontSize: 14, color: '#5A626B', background: 'rgba(14,116,144,.06)', borderRadius: 14, padding: 14, lineHeight: 1.5 }}>Phía trước còn 2 người · chờ khoảng 8–10 phút.</div>
     </div>
   );
