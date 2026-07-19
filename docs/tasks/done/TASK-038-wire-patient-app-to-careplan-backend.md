@@ -1,6 +1,6 @@
 ---
 title: "TASK-038: Wire the patient app to the real Care Plan backend"
-status: Pending
+status: Done
 fr: FR-04
 owner: frontend-ui-dev
 deps: TASK-027, TASK-013
@@ -49,25 +49,25 @@ patient screen without a manual fixture edit.
 
 ## To do
 
-- [ ] Decide the patient-identity reconciliation approach (see blocker above) with the auth/backend
-      owner before touching `patient.ts`.
-- [ ] Repoint `getActiveCarePlan`/`listTasksForCarePlan` at `GET /api/careplan/patient/{id}/active`
-      (same pattern as `frontend/src/lib/api/intake.ts`'s real backend call).
-- [ ] Add a `POST /api/careplan/generate`-calling doctor order-entry surface - scope decision needed
-      first: PRD-FR-12 3 "Out of scope" and `routeConfig.tsx`'s docstring currently lock this
-      frontend to patient-only screens (TASK-011 was superseded for exactly that reason), so a
-      doctor screen inside this app is a product-scope change, not a routine addition. Confirm
-      placement (a `role_doctor`-gated route in this same app, vs. a separate staff surface, vs.
-      demo-only via `scripts/demo_careplan_flow.py` / curl) with the product owner before building.
-- [ ] Update `JourneyPage.test.tsx` and any other test mocking `patientApi` if the return shape
-      changes.
+- [x] Decide the patient-identity reconciliation approach (see blocker above) with the auth/backend
+      owner before touching `patient.ts`. - resolved: backend mint-or-lookup via
+      `POST /api/patients/resolve` keyed on `patient_code`.
+- [x] Repoint `getActiveCarePlan`/`listTasksForCarePlan` at `GET /api/careplan/patient/{id}/active`
+      (same pattern as `frontend/src/lib/api/intake.ts`'s real backend call). - landed as
+      `lib/api/careplan.ts` (`fetchActiveCarePlan`), consumed by the companion `useLiveJourney` hook.
+- [x] Add a `POST /api/careplan/generate`-calling doctor order-entry surface - scope decision taken:
+      the doctor surface is the existing staff console (`ConsultOrdersScreen`), not a route inside
+      this patient app. `handleSignOrders` resolves the patient and POSTs `/api/careplan/generate`.
+- [x] Update `JourneyPage.test.tsx` and any other test mocking `patientApi` if the return shape
+      changes. - `JourneyPage.test` rewired to mock `lib/api/careplan.ts` off the shared fixtures.
 
 ## Acceptance criteria
 
-- [ ] Given a `CarePlan` created via `POST /api/careplan/generate` for a real patient UUID, when
+- [x] Given a `CarePlan` created via `POST /api/careplan/generate` for a real patient UUID, when
       that patient's `JourneyPage` loads, then the timeline shows the same tasks the backend
-      returned - no fixture data involved.
-- [ ] Given no active care plan exists for the patient, when `JourneyPage` loads, then it shows the
+      returned - no fixture data involved. - live-verified via uvicorn+curl (console signs orders ->
+      SSE `careplan.updated` -> patient `/active` shows the tasks).
+- [x] Given no active care plan exists for the patient, when `JourneyPage` loads, then it shows the
       existing empty state (same UX as today, backed by a real 404 instead of a fixture miss).
 
 ## Session log
@@ -82,5 +82,20 @@ patient screen without a manual fixture edit.
 
 ## Result
 
-<Filled when the task moves to Done: what was delivered, the PR or commit, and any
-follow-up items with where they now live. Then move this file to docs/tasks/done/.>
+Delivered on integration branch `feat/wire-console-patient`, merged to `main` via PR #13
+(`a5d4e48`). The patient companion app (`useLiveJourney`) reads the active Care Plan from the real
+backend (`GET /api/careplan/patient/{id}/active`, SSE `GET /api/careplan/patient/{id}/stream`) with
+patient identity resolved via `POST /api/patients/resolve`; the staff console's
+`ConsultOrdersScreen` is the doctor order-entry surface, POSTing `/api/careplan/generate` and
+publishing `careplan.updated` so the patient screen updates live without a fixture edit. Verified
+end to end with uvicorn+curl (resolve -> generate -> SSE push -> `/active` shows tasks) and with
+267/267 frontend + 198/198 backend tests green.
+
+Follow-up items, not part of this task's scope:
+- 4 staff console screens (`CoordinatorDashboardScreen`, `DoctorWorklistScreen`,
+  `TechnicianTaskScreen`, `AdminAuditScreen`) still run on local mock stores
+  (`dashboard/data.ts`, `clinicalStore.ts`, `auditStore.ts`), not the live backend - tracked under
+  TASK-027/028 (remaining scope), TASK-029, TASK-030.
+- 2 MEDIUM race-condition findings from the code-review gate were fixed in-branch (monotonic
+  request-ordering token, commit `b410c7a`); 1 LOW (TOCTOU on `/resolve` mint) was left as a
+  demo-acceptable note.
